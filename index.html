@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MJM Customer Survey</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            font-size: 20vw;
+            font-weight: 900;
+            color: rgba(15, 23, 42, 0.03);
+            white-space: nowrap;
+            z-index: -1;
+            pointer-events: none;
+            user-select: none;
+            font-style: italic;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(-50%, -50%) rotate(-15deg) scale(1); }
+            50% { transform: translate(-48%, -52%) rotate(-13deg) scale(1.05); }
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.04);
+        }
+
+        .mjm-logo {
+            display: flex;
+            align-items: baseline;
+            line-height: 1;
+        }
+        .mjm-text { 
+            color: #0f172a; 
+            font-size: 2.6rem; 
+            font-weight: 900; 
+            font-style: italic; 
+            letter-spacing: -0.06em;
+        }
+        .group-text { 
+            color: #15803d; 
+            font-size: 1.1rem; 
+            margin-left: 6px; 
+            font-weight: 800; 
+            font-style: italic;
+            text-transform: uppercase;
+        }
+
+        .btn-fancy {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-fancy:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.2);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+        }
+
+        .input-style {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #e2e8f0;
+            transition: border-color 0.2s;
+        }
+
+        .input-style:focus {
+            border-color: #15803d;
+            box-shadow: 0 0 0 4px rgba(21, 128, 61, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <div class="watermark">MJM GROUP</div>
+
+    <div id="auth-section" class="flex items-center justify-center min-h-screen p-4">
+        <div class="glass-panel p-10 rounded-[3.5rem] w-full max-w-md animate-in fade-in zoom-in duration-500">
+            <div class="flex flex-col items-center mb-10">
+                <div class="mjm-logo mb-2">
+                    <span class="mjm-text">MJM</span>
+                    <span class="group-text">GROUP</span>
+                </div>
+                <div class="h-1.5 w-12 bg-green-600 rounded-full mb-4"></div>
+                <h2 id="auth-title" class="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em]">Staff Portal</h2>
+            </div>
+
+            <div class="space-y-4">
+                <div id="signup-fields" class="hidden space-y-4">
+                    <input type="text" id="staff-name" placeholder="Enter Full Name" class="w-full p-4 input-style rounded-2xl outline-none font-bold text-slate-700">
+                    <select id="branch-select" class="w-full p-4 input-style rounded-2xl outline-none bg-white font-bold text-slate-700">
+                        <option value="">Select Branch...</option>
+                        <option>Bekenu Collection Centre</option>
+                        <option>Beraya Collection Centre</option>
+                        <option>Kejapil Collection Centre</option>
+                        <option>Pelapi Collection Centre</option>
+                        <option>Tegageng Collection Centre</option>
+                        <option>MJM(POM) Collection Center</option>
+                    </select>
+                </div>
+                
+                <input type="email" id="email" placeholder="Email Address" class="w-full p-4 input-style rounded-2xl outline-none font-bold text-slate-700">
+                <input type="password" id="password" placeholder="Password" class="w-full p-4 input-style rounded-2xl outline-none font-bold text-slate-700">
+                
+                <button id="main-auth-btn" class="w-full btn-fancy text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-xl">Login</button>
+                <button id="toggle-auth-btn" class="w-full text-slate-500 font-bold mt-4 text-[10px] uppercase tracking-widest hover:text-green-700 transition-colors">Create Staff Account</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboard" class="hidden p-4 md:p-8">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex justify-between items-center mb-10 glass-panel p-6 rounded-[2.5rem]">
+                <div class="flex flex-col">
+                    <div class="mjm-logo">
+                        <span class="mjm-text text-2xl">MJM</span>
+                        <span class="group-text text-[12px]">GROUP</span>
+                    </div>
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Customer Survey System</span>
+                </div>
+                <button id="logout-btn" class="text-[10px] font-black text-slate-400 hover:text-red-500 uppercase tracking-widest bg-slate-50 px-5 py-2 rounded-full border border-slate-100 transition-all">Sign Out</button>
+            </div>
+            
+            <div id="selection-menu" class="flex flex-col gap-5">
+                <a href="new-customer.html" class="group w-full text-left glass-panel p-8 rounded-[2.5rem] border-l-[12px] border-green-600 hover:bg-white transition-all">
+                    <span class="text-xl font-black block text-slate-800 uppercase tracking-tight">🌱 New Customer</span>
+                </a>
+                <a href="active-customer.html" class="group w-full text-left glass-panel p-8 rounded-[2.5rem] border-l-[12px] border-blue-600 hover:bg-white transition-all">
+                    <span class="text-xl font-black block text-slate-800 uppercase tracking-tight">🚛 Active Existing Customer</span>
+                </a>
+                <a href="inactive-customer.html" class="group w-full text-left glass-panel p-8 rounded-[2.5rem] border-l-[12px] border-slate-700 hover:bg-white transition-all">
+                    <span class="text-xl font-black block text-slate-800 uppercase tracking-tight">🛑 Inactive Customer (No FFB supply in past 1 month)</span>
+                </a>
+                <a href="follow-up.html" class="group w-full text-left glass-panel p-8 rounded-[2.5rem] border-l-[12px] border-red-500 hover:bg-white transition-all">
+                    <span class="text-xl font-black block text-slate-800 uppercase tracking-tight">🚩 Follow Up Cases</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase Config
+        const SUPABASE_URL = 'https://pjxrkhrtqkvxtjhopohx.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_-51Tg7zfwk5PsBWw2dzulw_eyUM-Mzu';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const mainBtn = document.getElementById('main-auth-btn');
+            const toggleBtn = document.getElementById('toggle-auth-btn');
+            const signupFields = document.getElementById('signup-fields');
+            const authTitle = document.getElementById('auth-title');
+
+            // 1. Toggling between Login and Sign Up
+            toggleBtn.addEventListener('click', () => {
+                const isCurrentlyLogin = (mainBtn.innerText === 'LOGIN');
+                
+                if (isCurrentlyLogin) {
+                    signupFields.classList.remove('hidden');
+                    mainBtn.innerText = 'SIGN UP';
+                    authTitle.innerText = 'STAFF REGISTRATION';
+                    toggleBtn.innerText = 'BACK TO LOGIN';
+                } else {
+                    signupFields.classList.add('hidden');
+                    mainBtn.innerText = 'LOGIN';
+                    authTitle.innerText = 'STAFF PORTAL';
+                    toggleBtn.innerText = 'CREATE STAFF ACCOUNT';
+                }
+            });
+
+            // 2. Main Authentication Logic
+            mainBtn.addEventListener('click', async () => {
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+
+                if (mainBtn.innerText === 'SIGN UP') {
+                    const fullName = document.getElementById('staff-name').value;
+                    const branch = document.getElementById('branch-select').value;
+
+                    if(!fullName || !branch || !email || !password) {
+                        return alert("Please fill in Name, Branch, Email, and Password.");
+                    }
+
+                    const { data, error } = await _supabase.auth.signUp({ email, password });
+                    if (error) return alert(error.message);
+
+                    if (data.user) {
+                        const { error: pErr } = await _supabase.from('profiles').insert([
+                            { id: data.user.id, full_name: fullName, branch: branch, email: email }
+                        ]);
+                        if (pErr) alert("Account created, but profile mapping failed: " + pErr.message);
+                        else alert("Account created! You can now log in.");
+                        location.reload();
+                    }
+                } else {
+                    const { error } = await _supabase.auth.signInWithPassword({ email, password });
+                    if (error) alert("Login Failed: " + error.message);
+                }
+            });
+
+            // 3. Monitor Auth State
+            _supabase.auth.onAuthStateChange((event, session) => {
+                if (session) {
+                    document.getElementById('auth-section').classList.add('hidden');
+                    document.getElementById('dashboard').classList.remove('hidden');
+                } else {
+                    document.getElementById('auth-section').classList.remove('hidden');
+                    document.getElementById('dashboard').classList.add('hidden');
+                }
+            });
+
+            // 4. Logout Handler
+            document.getElementById('logout-btn').addEventListener('click', async () => {
+                await _supabase.auth.signOut();
+                location.reload();
+            });
+        });
+    </script>
+</body>
+</html>

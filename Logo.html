@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inactive Customer - MJM Survey</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .selected-card { border: 2px solid #15803d !important; background-color: #f0fdf4 !important; }
+        .form-label { display: block; font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 0.25rem; }
+        .soil-box { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; color: #1e293b; }
+        .brand-gradient { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); }
+    </style>
+</head>
+<body class="text-slate-900 p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-8 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="bg-slate-900 p-2 rounded-lg">
+                    <span class="text-white font-black italic text-xl tracking-tighter">MJM</span>
+                </div>
+                <div>
+                    <h1 class="text-lg font-black text-slate-700 uppercase leading-none">Inactive Survey</h1>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">MJM Group Logistics</p>
+                </div>
+            </div>
+            <a href="index.html" class="text-xs font-bold text-slate-500 hover:text-green-700 hover:bg-green-50 transition-all uppercase tracking-widest bg-slate-50 px-4 py-2 rounded-xl border border-slate-200">Back to Menu</a>
+        </div>
+
+        <div class="bg-white p-6 md:p-8 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-200 mb-8">
+            <div id="search-section" class="space-y-6">
+                <div class="flex gap-3">
+                    <div class="relative flex-1">
+                        <input type="text" id="search_input" placeholder="Search Customer Name or Location..." 
+                        class="w-full p-4 pl-12 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-green-600 focus:bg-white transition-all font-medium">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+                    </div>
+                    <button type="button" onclick="performSearch()" class="brand-gradient text-white px-8 py-4 rounded-2xl font-black uppercase tracking-tight hover:scale-[1.02] active:scale-95 transition-all">Search</button>
+                </div>
+                <div id="search-results" class="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto pr-2"></div>
+            </div>
+
+            <div id="profile-area" class="hidden mt-8 space-y-6 animate-in fade-in duration-500">
+                <div id="profile-display" class="bg-slate-50 p-8 rounded-[2rem] border-2 border-slate-100 space-y-6">
+                    <div class="flex justify-between items-start">
+                        <h2 class="text-2xl font-black text-slate-800 tracking-tight" id="d_name"></h2>
+                        <span class="bg-amber-100 text-amber-700 text-[10px] font-black px-3 py-1 rounded-full uppercase">Inactive Record</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <p class="form-label text-green-600">📍 Location</p>
+                            <p id="d_loc" class="font-bold text-slate-700 truncate text-sm"></p>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <p class="form-label text-blue-600">📏 Area Size</p>
+                            <p id="d_size" class="font-bold text-slate-700"></p>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <p class="form-label text-emerald-600">📊 Est. Monthly</p>
+                            <p id="d_ton" class="font-bold text-slate-700"></p>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 pt-2">
+                        <button onclick="showMode('update')" class="flex-1 bg-slate-800 text-white py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all">Update Profile</button>
+                        <button onclick="showMode('add')" class="flex-1 bg-indigo-600 text-white py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-indigo-700 transition-all">Add New Estate</button>
+                    </div>
+                </div>
+
+                <div id="editor-container" class="hidden bg-white p-8 rounded-[2rem] border-2 border-slate-200 space-y-6 shadow-lg">
+                    <h3 id="editor-title" class="text-xl font-black text-slate-800 uppercase tracking-tighter flex items-center gap-2">
+                        <span class="w-2 h-8 bg-green-600 rounded-full"></span> Profile Editor
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div class="md:col-span-2"><label class="form-label">Customer / Company Name</label><input type="text" id="f_name" class="w-full p-4 bg-slate-50 border rounded-2xl focus:border-green-600 outline-none"></div>
+                        <div class="md:col-span-2"><label class="form-label">Contact Number</label><input type="text" id="f_contact" class="w-full p-4 bg-slate-50 border rounded-2xl focus:border-green-600 outline-none"></div>
+                        
+                        <div class="md:col-span-2 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                            <label class="form-label">Type of Soil</label>
+                            <div class="flex gap-8 mt-2">
+                                <label class="soil-box cursor-pointer"><input type="checkbox" id="soil_mineral" class="w-5 h-5 accent-green-600"> MINERAL SOIL AREA</label>
+                                <label class="soil-box cursor-pointer"><input type="checkbox" id="soil_peat" class="w-5 h-5 accent-blue-600"> PEAT SOIL AREA</label>
+                            </div>
+                        </div>
+
+                        <div><label class="form-label">Total Area (Ha)</label><input type="number" id="f_area" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none"></div>
+                        <div><label class="form-label">Monthly Supply (mt)</label><input type="number" id="f_ton" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none"></div>
+                        <div><label class="form-label">Estate Location</label><input type="text" id="f_loc" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none"></div>
+                        <div><label class="form-label">Google Location Link</label><input type="text" id="f_google" placeholder="https://maps..." class="w-full p-4 bg-slate-50 border rounded-2xl outline-none"></div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <label class="form-label italic">Currently supply to?</label>
+                        <div class="grid grid-cols-2 gap-3"><input type="text" id="sup1_n" placeholder="Name of mill / center" class="p-4 bg-slate-50 border rounded-2xl text-xs"><input type="number" id="sup1_p" placeholder="Price (RM/mt)" class="p-4 bg-slate-50 border rounded-2xl text-xs"></div>
+                        <div class="grid grid-cols-2 gap-3"><input type="text" id="sup2_n" placeholder="Name of mill / center" class="p-4 bg-slate-50 border rounded-2xl text-xs"><input type="number" id="sup2_p" placeholder="Price (RM/mt)" class="p-4 bg-slate-50 border rounded-2xl text-xs"></div>
+                        <div class="grid grid-cols-2 gap-3"><input type="text" id="sup3_n" placeholder="Name of mill / center" class="p-4 bg-slate-50 border rounded-2xl text-xs"><input type="number" id="sup3_p" placeholder="Price (RM/mt)" class="p-4 bg-slate-50 border rounded-2xl text-xs"></div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button id="save-btn" class="flex-1 bg-green-700 text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-green-200 hover:bg-green-800 transition-all">Save Customer Profile</button>
+                        <button onclick="hideEditor()" class="px-8 bg-slate-100 text-slate-500 rounded-2xl font-black uppercase text-xs hover:bg-slate-200 transition-all">Cancel</button>
+                    </div>
+                </div>
+
+                <button id="survey-trigger" onclick="showMode('survey')" class="w-full brand-gradient text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-slate-300 hover:scale-[1.01] transition-all">Proceed to Inactive Survey</button>
+
+                <form id="ffb-form" class="hidden space-y-8 bg-white p-8 rounded-[2rem] border-2 border-slate-900 shadow-2xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 bg-slate-900 text-white text-[10px] font-black uppercase rounded-bl-2xl">Survey Mode</div>
+                    <h3 class="text-xl font-black text-slate-800 uppercase tracking-tighter underline decoration-green-500 decoration-4 underline-offset-8">Reason for Inactivity</h3>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-xs font-black text-slate-500 uppercase mb-2">1. Why are they not supplying FFB to us?</label>
+                            <textarea id="iq_reason" class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-slate-400 min-h-[100px]" placeholder="Enter detailed reason..."></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-black text-slate-500 uppercase mb-2">2. Improvement advice from customer?</label>
+                            <textarea id="iq_advice" class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-slate-400 min-h-[100px]" placeholder="How can we win them back?"></textarea>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <label class="block text-xs font-black text-slate-500 uppercase">3. Current Competitors & Pricing</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <input type="text" id="ib1" placeholder="Mill / Collection Center Name" class="p-4 bg-slate-50 border rounded-2xl text-sm">
+                                <input type="number" id="ip1" placeholder="Offered Price (RM)" class="p-4 bg-slate-50 border rounded-2xl text-sm">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <input type="text" id="ib2" placeholder="Mill / Collection Center Name" class="p-4 bg-slate-50 border rounded-2xl text-sm">
+                                <input type="number" id="ip2" placeholder="Offered Price (RM)" class="p-4 bg-slate-50 border rounded-2xl text-sm">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <input type="text" id="ib3" placeholder="Mill / Collection Center Name" class="p-4 bg-slate-50 border rounded-2xl text-sm">
+                                <input type="number" id="ip3" placeholder="Offered Price (RM)" class="p-4 bg-slate-50 border rounded-2xl text-sm">
+                            </div>
+                        </div>
+
+                        <div class="p-6 bg-green-50 border-2 border-green-100 rounded-2xl flex items-center justify-between group cursor-pointer hover:border-green-300 transition-all">
+                            <label for="iq_negotiate" class="text-xs font-black text-green-800 uppercase pr-4 cursor-pointer">4. Request marketing team for pricing negotiation?</label>
+                            <input type="checkbox" id="iq_negotiate" class="w-7 h-7 accent-green-700 cursor-pointer">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-green-700 text-white py-6 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl hover:bg-green-800 hover:shadow-green-200 transition-all">Submit Inactive Report</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentData = null;
+
+        async function performSearch() {
+            const val = document.getElementById('search_input').value;
+            if (val.length < 3) return;
+            const { data } = await _supabase.from('ffb_logs').select('*').or(`customer_name.ilike.%${val}%,location.ilike.%${val}%,notes.ilike.%${val}%`).order('created_at', { ascending: false });
+            const resDiv = document.getElementById('search-results');
+            
+            if (data?.length > 0) {
+                resDiv.innerHTML = data.map(rec => {
+                    const estTon = rec.notes?.match(/Est Monthly:\s*([\d.]+)/)?.[1] || "0";
+                    return `
+                    <div onclick='selectCustomer(${JSON.stringify(rec).replace(/'/g, "&apos;")}, this)' class="customer-card cursor-pointer p-5 bg-white border border-slate-200 rounded-2xl shadow-sm hover:border-green-400 transition-all mb-1">
+                        <div class="flex justify-between font-black text-slate-800"><span>${rec.customer_name}</span></div>
+                        <div class="text-[10px] text-slate-400 font-bold mt-1 uppercase flex items-center gap-1">📍 ${rec.location.split(' (Link:')[0]}</div>
+                        <div class="flex gap-3 mt-3">
+                            <span class="text-[9px] font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">📏 ${rec.area_size || 0} Ha</span>
+                            <span class="text-[9px] font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg">📊 ${estTon} MT/mo</span>
+                        </div>
+                    </div>`;
+                }).join('');
+            } else {
+                resDiv.innerHTML = `
+                    <div class="text-center py-10 border-4 border-dashed border-slate-100 rounded-3xl bg-slate-50/50">
+                        <p class="text-slate-400 font-black mb-4 uppercase text-xs tracking-widest">Customer Not Found</p>
+                        <button onclick="showMode('new')" class="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all">+ Create New Customer Profile</button>
+                    </div>`;
+            }
+        }
+
+        function selectCustomer(data, el) {
+            currentData = data;
+            document.querySelectorAll('.customer-card').forEach(c => c.classList.remove('selected-card'));
+            el.classList.add('selected-card');
+            document.getElementById('profile-area').classList.remove('hidden');
+            document.getElementById('profile-display').classList.remove('hidden');
+            document.getElementById('editor-container').classList.add('hidden');
+            document.getElementById('ffb-form').classList.add('hidden');
+            document.getElementById('d_name').innerText = data.customer_name;
+            document.getElementById('d_loc').innerText = data.location.split(' (Link:')[0];
+            document.getElementById('d_size').innerText = (data.area_size || 0) + " Ha";
+            document.getElementById('d_ton').innerText = (data.notes?.match(/Est Monthly:\s*([\d.]+)/)?.[1] || 0) + " mt";
+        }
+
+        function showMode(mode) {
+            if(mode === 'survey') {
+                document.getElementById('ffb-form').classList.remove('hidden');
+                document.getElementById('editor-container').classList.add('hidden');
+                return;
+            }
+            const container = document.getElementById('editor-container');
+            container.classList.remove('hidden');
+            document.getElementById('ffb-form').classList.add('hidden');
+            
+            if(mode === 'new') {
+                document.getElementById('profile-area').classList.remove('hidden');
+                document.getElementById('profile-display').classList.add('hidden');
+                document.getElementById('editor-title').innerText = 'New Customer Profile';
+                clearForm();
+                document.getElementById('save-btn').onclick = submitNewEstate;
+            } else {
+                document.getElementById('profile-display').classList.remove('hidden');
+                document.getElementById('editor-title').innerText = mode === 'update' ? 'Update Profile' : 'Add New Estate';
+                document.getElementById('save-btn').onclick = mode === 'update' ? submitUpdate : submitNewEstate;
+                fillForm();
+            }
+        }
+
+        function clearForm() {
+            const fields = ['f_name', 'f_contact', 'f_loc', 'f_google', 'f_area', 'f_ton', 'sup1_n', 'sup1_p', 'sup2_n', 'sup2_p', 'sup3_n', 'sup3_p'];
+            fields.forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
+            if(document.getElementById('soil_mineral')) document.getElementById('soil_mineral').checked = false;
+            if(document.getElementById('soil_peat')) document.getElementById('soil_peat').checked = false;
+        }
+
+        function fillForm() {
+            document.getElementById('f_name').value = currentData.customer_name;
+            document.getElementById('f_loc').value = currentData.location.split(' (Link:')[0];
+            document.getElementById('f_google').value = currentData.location.match(/\(Link:\s*(.*?)\)/)?.[1] || "";
+            document.getElementById('f_area').value = currentData.area_size;
+            document.getElementById('f_contact').value = currentData.notes?.match(/Contact:\s*([^.]+)/)?.[1] || "";
+            document.getElementById('f_ton').value = currentData.notes?.match(/Est Monthly:\s*([\d.]+)/)?.[1] || "";
+        }
+
+        function getPayload() {
+            const soil = [];
+            if(document.getElementById('soil_mineral')?.checked) soil.push('Mineral');
+            if(document.getElementById('soil_peat')?.checked) soil.push('Peat');
+            
+            return {
+                customer_name: document.getElementById('f_name').value,
+                location: `${document.getElementById('f_loc').value} (Link: ${document.getElementById('f_google').value})`,
+                area_size: document.getElementById('f_area').value,
+                notes: `Contact: ${document.getElementById('f_contact').value}. Soil: ${soil.join('/')}. Est Monthly: ${document.getElementById('f_ton').value}mt.`
+            };
+        }
+
+        async function submitUpdate() {
+            const { error } = await _supabase.from('ffb_logs').update(getPayload()).eq('id', currentData.id);
+            if (!error) { alert("Profile Updated!"); location.reload(); }
+        }
+
+        async function submitNewEstate() {
+            const user = await checkAuth();
+            const payload = { ...getPayload(), log_type: 'New Profile Created', branch: userBranch, pic_email: user.email };
+            const { error } = await _supabase.from('ffb_logs').insert([payload]);
+            if (!error) { alert("Customer Profile Saved!"); location.reload(); }
+        }
+
+        document.getElementById('ffb-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const user = await checkAuth();
+            
+            const comps = [];
+            for(let i=1; i<=3; i++) {
+                const n = document.getElementById('ib'+i).value;
+                const p = document.getElementById('ip'+i).value;
+                if(n) comps.push(`${n}(RM${p})`);
+            }
+
+            const finalNotes = `Inactive Survey: Reason:${document.getElementById('iq_reason').value} | Advice:${document.getElementById('iq_advice').value} | Competitors:${comps.join(',')}`;
+
+            const payload = { 
+                customer_name: currentData.customer_name, 
+                location: currentData.location, 
+                log_type: 'Inactive Survey', 
+                notes: finalNotes, 
+                follow_up_action: document.getElementById('iq_negotiate').checked ? 'Marketing team pricing approach' : 'No', 
+                branch: userBranch, 
+                pic_email: user.email 
+            };
+
+            const { error } = await _supabase.from('ffb_logs').insert([payload]);
+            if (!error) { alert("Inactive Record Saved!"); location.reload(); }
+        };
+
+        function hideEditor() { document.getElementById('editor-container').classList.add('hidden'); }
+        window.onload = checkAuth;
+    </script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Follow Up Tracking - MJM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        /* Simple Modal Backdrop */
+        #close-modal { background-color: rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-8 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h1 class="text-2xl font-extrabold text-slate-700 uppercase italic">🚩 Follow Up Cases</h1>
+            <a href="index.html" class="text-xs font-bold text-slate-400 hover:text-blue-600 uppercase tracking-widest bg-slate-50 px-3 py-2 rounded-lg shadow-sm border">Back to Menu</a>
+        </div>
+
+        <div class="bg-white p-6 md:p-8 rounded-3xl shadow-2xl border border-slate-200 min-h-[400px]">
+            <div class="flex justify-end mb-6">
+                <select id="type-filter" onchange="fetchCases()" class="text-[10px] font-bold uppercase border border-slate-200 bg-slate-50 rounded-xl p-3 outline-none shadow-sm focus:border-blue-400">
+                    <option value="all">All Pending Types</option>
+                    <option value="Issue Follow Up Case">Follow Up Issues</option>
+                    <option value="Marketing team pricing approach">Marketing Approach</option>
+                </select>
+            </div>
+
+            <div id="case-list" class="space-y-4">
+                <div class="text-center py-20 text-slate-400 animate-pulse font-bold uppercase text-xs">Fetching pending cases...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="close-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+            <h2 class="text-xl font-black text-slate-800 uppercase italic mb-2">Review & Close Case</h2>
+            <p id="modal-customer-name" class="text-sm font-bold text-blue-600 mb-4 border-b pb-2"></p>
+            
+            <div class="mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <p class="text-[10px] font-black text-slate-400 uppercase mb-2">Previous Survey Records:</p>
+                <div id="modal-survey-details" class="text-xs text-slate-700 space-y-2 whitespace-pre-line leading-relaxed">
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-[10px] font-black text-slate-500 uppercase px-1">Follow Up Solution / Action Taken:</label>
+                <textarea id="resolution-text" class="w-full p-4 border-2 border-slate-100 rounded-2xl outline-none focus:border-blue-500 text-sm mb-4 h-32" placeholder="Describe how this case was resolved..."></textarea>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="submitClose()" class="flex-1 bg-slate-800 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest">Confirm & Close</button>
+                <button onclick="hideModal()" class="px-6 bg-slate-100 text-slate-500 rounded-2xl font-bold uppercase text-[10px]">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedCaseId = null;
+        let allFetchedData = []; // To store data locally for the modal lookup
+
+        async function fetchCases() {
+            const filterVal = document.getElementById('type-filter').value;
+            
+            let query = _supabase
+                .from('ffb_logs')
+                .select('*')
+                .not('follow_up_action', 'is', null)
+                .neq('follow_up_action', 'No')
+                .neq('follow_up_action', 'Closed');
+
+            // Apply filter if not "all"
+            if (filterVal !== 'all') {
+                if (filterVal === 'Issue Follow Up Case') {
+                    query = query.or(`follow_up_action.eq.Issue Follow Up Case,follow_up_action.eq.Yes`);
+                } else {
+                    query = query.eq('follow_up_action', filterVal);
+                }
+            }
+
+            const { data, error } = await query.order('created_at', { ascending: false });
+
+            const listDiv = document.getElementById('case-list');
+            if (error) {
+                console.error("Supabase Error:", error);
+                listDiv.innerHTML = `<p class="text-center py-20 text-red-400 font-bold">Error loading data</p>`;
+                return;
+            }
+
+            allFetchedData = data || []; // Store for modal access
+
+            if (allFetchedData.length === 0) {
+                listDiv.innerHTML = `
+                    <div class="text-center py-20">
+                        <p class="text-slate-300 font-black text-4xl mb-2">0</p>
+                        <p class="text-slate-400 font-bold uppercase text-xs tracking-widest">No pending cases found</p>
+                    </div>`;
+                return;
+            }
+
+            listDiv.innerHTML = allFetchedData.map(c => {
+                let displayAction = c.follow_up_action;
+                let badgeColor = "bg-red-100 text-red-600 border-red-200";
+
+                if (displayAction === "Yes") { displayAction = "Issue Follow Up Case"; }
+                if (displayAction.toLowerCase().includes('marketing')) {
+                    badgeColor = "bg-blue-100 text-blue-600 border-blue-200";
+                }
+
+                return `
+                <div class="p-6 bg-white border-2 border-slate-100 rounded-2xl shadow-sm hover:border-blue-400 transition-all">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="text-[10px] font-black uppercase px-3 py-1 rounded-full border ${badgeColor}">
+                            ${displayAction}
+                        </span>
+                        <span class="text-[10px] font-bold text-slate-400">
+                            ${new Date(c.created_at).toLocaleDateString('en-GB')}
+                        </span>
+                    </div>
+                    <h3 class="text-lg font-black text-slate-800 mb-1">${c.customer_name}</h3>
+                    <p class="text-xs text-slate-500 font-bold uppercase mb-3 text-blue-600 tracking-tight">📍 ${c.location.split(' (Link:')[0]}</p>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 italic text-sm text-slate-700 mb-4 truncate">
+                        ${c.notes}
+                    </div>
+                    <button onclick="openModal(${c.id})" class="text-blue-600 text-[10px] font-black uppercase tracking-widest hover:underline">
+                        Review Details & Close Case →
+                    </button>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function openModal(id) {
+            selectedCaseId = id;
+            const caseData = allFetchedData.find(item => item.id === id);
+            
+            if (caseData) {
+                document.getElementById('modal-customer-name').innerText = caseData.customer_name;
+                const cleanNotes = caseData.notes.replaceAll(' | ', '\n').replaceAll(':', ': ');
+                document.getElementById('modal-survey-details').innerText = cleanNotes;
+                document.getElementById('close-modal').classList.remove('hidden');
+            }
+        }
+
+        function hideModal() {
+            document.getElementById('close-modal').classList.add('hidden');
+            document.getElementById('resolution-text').value = '';
+        }
+
+        async function submitClose() {
+            const resolution = document.getElementById('resolution-text').value;
+            if (!resolution) return alert("Please enter a resolution note.");
+
+            const { error } = await _supabase
+                .from('ffb_logs')
+                .update({ 
+                    follow_up_action: 'Closed',
+                    notes: `[CLOSED: ${resolution}] | Original: ${document.getElementById('modal-survey-details').innerText.replaceAll('\n', ' | ')}`
+                })
+                .eq('id', selectedCaseId);
+
+            if (error) {
+                alert("Error closing case: " + error.message);
+            } else {
+                alert("Case Closed successfully!");
+                hideModal();
+                fetchCases();
+            }
+        }
+
+        window.onload = async () => {
+            if (typeof checkAuth === 'function') await checkAuth();
+            fetchCases();
+        };
+    </script>
+</body>
+</html>
