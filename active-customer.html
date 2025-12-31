@@ -138,20 +138,16 @@
         async function performSearch() {
             const val = document.getElementById('search_input').value;
             if (val.length < 3) return;
+            // Fetch all matching records, including duplicates with same names but different estates
             const { data } = await _supabase.from('ffb_logs').select('*').or(`customer_name.ilike.%${val}%,location.ilike.%${val}%,notes.ilike.%${val}%`).order('created_at', { ascending: false });
             const resDiv = document.getElementById('search-results');
             
             if (data?.length > 0) {
-                const seen = new Set();
-                const uniqueData = data.filter(item => {
-                    const name = item.customer_name.toLowerCase().trim();
-                    return seen.has(name) ? false : seen.add(name);
-                });
-
-                resDiv.innerHTML = uniqueData.map(rec => {
+                // REMOVED THE SEEN/SET FILTER so all estate profiles under the same name show up
+                resDiv.innerHTML = data.map(rec => {
                     const estTon = rec.notes?.match(/Est Monthly:\s*([\d.]+)/)?.[1] || "0";
                     return `
-                    <div onclick='selectCustomer(${JSON.stringify(rec).replace(/'/g, "&apos;")}, this)' class="customer-card cursor-pointer p-4 bg-white border rounded-2xl shadow-sm hover:border-slate-400">
+                    <div onclick='selectCustomer(${JSON.stringify(rec).replace(/'/g, "&apos;")}, this)' class="customer-card cursor-pointer p-4 bg-white border rounded-2xl shadow-sm hover:border-slate-400 mb-2">
                         <div class="flex justify-between font-black text-slate-800"><span>${rec.customer_name}</span></div>
                         <div class="text-[10px] text-slate-500 font-semibold mt-1 uppercase">📍 ${rec.location.split(' (Link:')[0]}</div>
                         <div class="flex gap-4 mt-2">
@@ -190,41 +186,66 @@
             document.getElementById('ffb-form').classList.add('hidden');
             document.getElementById('profile-display').classList.remove('hidden');
             document.getElementById('editor-title').innerText = mode === 'update' ? 'Update Profile' : 'Add New Estate';
+            
+            fillForm(mode === 'add');
             document.getElementById('save-btn').onclick = mode === 'update' ? submitUpdate : submitNewEstate;
-            fillForm();
         }
 
-        function fillForm() {
+        function fillForm(isNewEstate = false) {
             document.getElementById('f_name').value = currentData.customer_name;
-            document.getElementById('f_loc').value = currentData.location.split(' (Link:')[0];
-            document.getElementById('f_google').value = currentData.location.match(/\(Link:\s*(.*?)\)/)?.[1] || "";
-            document.getElementById('f_area').value = currentData.area_size;
-            document.getElementById('f_contact').value = currentData.notes?.match(/Contact:\s*([^.]+)/)?.[1] || "";
-            document.getElementById('f_ton').value = currentData.notes?.match(/Est Monthly:\s*([\d.]+)/)?.[1] || "";
+            const notesStr = currentData.notes || "";
+            document.getElementById('f_contact').value = notesStr.match(/Contact:\s*([^.]+)/)?.[1] || "";
+            
+            const soilPart = notesStr.match(/Soil:\s*([^.]+)/)?.[1] || "";
+            document.getElementById('soil_mineral').checked = soilPart.includes('Mineral');
+            document.getElementById('soil_peat').checked = soilPart.includes('Peat');
+
+            if (isNewEstate) {
+                document.getElementById('f_loc').value = "";
+                document.getElementById('f_google').value = "";
+                document.getElementById('f_area').value = "";
+                document.getElementById('f_ton').value = "";
+            } else {
+                document.getElementById('f_loc').value = currentData.location.split(' (Link:')[0];
+                document.getElementById('f_google').value = currentData.location.match(/\(Link:\s*(.*?)\)/)?.[1] || "";
+                document.getElementById('f_area').value = currentData.area_size;
+                document.getElementById('f_ton').value = notesStr.match(/Est Monthly:\s*([\d.]+)/)?.[1] || "";
+            }
         }
 
         function getPayload() {
             const soil = [];
-            if(document.getElementById('soil_mineral')?.checked) soil.push('Mineral');
-            if(document.getElementById('soil_peat')?.checked) soil.push('Peat');
+            if(document.getElementById('soil_mineral').checked) soil.push('Mineral');
+            if(document.getElementById('soil_peat').checked) soil.push('Peat');
+            const soilType = soil.join('/') || "Not Specified";
+            const tonnage = document.getElementById('f_ton').value;
+
             return {
                 customer_name: document.getElementById('f_name').value,
                 location: `${document.getElementById('f_loc').value} (Link: ${document.getElementById('f_google').value})`,
                 area_size: document.getElementById('f_area').value,
-                notes: `Contact: ${document.getElementById('f_contact').value}. Soil: ${soil.join('/')}. Est Monthly: ${document.getElementById('f_ton').value}mt.`
+                tonnage: tonnage,
+                notes: `Contact: ${document.getElementById('f_contact').value}. Soil: ${soilType}. Est Monthly: ${tonnage}mt.`
             };
         }
 
         async function submitUpdate() {
+            // Overwrites ONLY the specific record currently selected (using its ID)
             const { error } = await _supabase.from('ffb_logs').update(getPayload()).eq('id', currentData.id);
             if (!error) { alert("Profile Updated!"); location.reload(); }
         }
 
         async function submitNewEstate() {
             const user = await checkAuth();
-            const payload = { ...getPayload(), log_type: 'New Profile Created', branch: userBranch, pic_email: user.email };
+            // Inserts a BRAND NEW record, allowing duplicate names with different estate locations
+            const payload = { 
+                ...getPayload(), 
+                log_type: 'New Estate Added', 
+                branch: userBranch, 
+                pic_email: user.email 
+            };
             const { error } = await _supabase.from('ffb_logs').insert([payload]);
-            if (!error) { alert("Customer Profile Saved!"); location.reload(); }
+            if (!error) { alert("New Estate Added Successfully!"); location.reload(); }
         }
 
         document.getElementById('ffb-form').onsubmit = async (e) => {
