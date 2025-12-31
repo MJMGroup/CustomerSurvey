@@ -106,7 +106,6 @@
             const val = document.getElementById('search_input').value;
             if (val.length < 3) return;
 
-            // FIX: Exclude Surveys from results so only estate profiles show up
             const { data } = await _supabase.from('ffb_logs')
                 .select('*')
                 .not('log_type', 'ilike', '%Survey%')
@@ -129,8 +128,20 @@
                     </div>`;
                 }).join('');
             } else {
-                resDiv.innerHTML = `<p class="text-center text-slate-400 font-bold uppercase text-xs py-4">No profiles found.</p>`;
+                resDiv.innerHTML = `
+                <div class="text-center py-6">
+                    <p class="text-slate-400 font-bold uppercase text-xs mb-3">No matching profile found.</p>
+                    <button onclick="createNewFromSearch('${val}')" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-black text-xs uppercase shadow-md">
+                        + Create New Profile: "${val}"
+                    </button>
+                </div>`;
             }
+        }
+
+        function createNewFromSearch(name) {
+            currentData = { customer_name: name, location: "", area_size: "", notes: "" };
+            document.getElementById('profile-area').classList.remove('hidden');
+            showMode('add');
         }
 
         function selectCustomer(data, el) {
@@ -157,7 +168,7 @@
             container.classList.remove('hidden');
             document.getElementById('ffb-form').classList.add('hidden');
             document.getElementById('profile-display').classList.remove('hidden');
-            document.getElementById('editor-title').innerText = mode === 'update' ? 'Update Profile' : 'Add New Estate';
+            document.getElementById('editor-title').innerText = mode === 'update' ? 'Update Profile' : 'Create New Profile';
             
             fillForm(mode === 'add');
             document.getElementById('save-btn').onclick = mode === 'update' ? submitUpdate : submitNewEstate;
@@ -209,12 +220,12 @@
             const user = await checkAuth();
             const payload = { 
                 ...getPayload(), 
-                log_type: 'New Estate Added', 
+                log_type: 'New Customer Profile', 
                 branch: userBranch, 
                 pic_email: user.email 
             };
             const { error } = await _supabase.from('ffb_logs').insert([payload]);
-            if (!error) { alert("New Estate Added Successfully!"); location.reload(); }
+            if (!error) { alert("Profile Created Successfully!"); location.reload(); }
         }
 
         document.getElementById('ffb-form').onsubmit = async (e) => {
