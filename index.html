@@ -25,7 +25,6 @@
             overflow-x: hidden;
         }
 
-        /* Animated Agricultural Background Pattern (FFB & Seedlings) */
         .bg-pattern {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -122,14 +121,9 @@
 
     <div id="reset-section" class="hidden flex items-center justify-center min-h-screen p-4">
         <div class="glass-panel p-10 rounded-[3rem] w-full max-w-md text-center">
-            <div class="flex flex-col items-center mb-8">
-                <div class="italic font-black text-2xl mjm-dark-green mb-2">UPDATE PASSWORD</div>
-                <div class="h-1 w-8 bg-[#a7c957] rounded-full"></div>
-            </div>
-            <div class="space-y-4">
-                <input type="password" id="new-password" placeholder="Enter New Password" class="w-full p-4 input-style rounded-2xl outline-none font-semibold">
-                <button id="update-pass-btn" class="w-full btn-primary text-white py-4 rounded-2xl font-bold uppercase tracking-widest shadow-lg">Save New Password</button>
-            </div>
+            <h2 class="text-xl font-black text-slate-800 uppercase mb-6">Set New Password</h2>
+            <input type="password" id="new-password" placeholder="New Password" class="w-full p-4 input-style rounded-2xl outline-none font-semibold mb-4">
+            <button id="update-pass-btn" class="w-full btn-primary text-white py-4 rounded-2xl font-bold uppercase tracking-widest shadow-lg">Update Password</button>
         </div>
     </div>
 
@@ -147,19 +141,19 @@
             </div>
             
             <div id="selection-menu" class="flex flex-col gap-5">
-                <a href="new-customer.html" class="glass-panel p-8 rounded-[2.5rem] border-l-[12px] border-green-600 hover:translate-x-1 transition-transform block">
+                <a href="new-customer.html" class="glass-panel p-8 rounded-[2.5rem] border-l-[12px] border-green-600 block">
                     <span class="text-xl font-black text-slate-800 uppercase">🌱 New Customer</span>
                 </a>
-                <a href="active-customer.html" class="glass-panel p-8 rounded-[2.5rem] border-l-[12px] border-blue-600 hover:translate-x-1 transition-transform block">
+                <a href="active-customer.html" class="glass-panel p-8 rounded-[2.5rem] border-l-[12px] border-blue-600 block">
                     <span class="text-xl font-black text-slate-800 uppercase">🚛 Active Existing Customer</span>
                 </a>
-                <a href="inactive-customer.html" class="glass-panel p-8 rounded-[2.5rem] border-l-[12px] border-slate-700 hover:translate-x-1 transition-transform block">
-                    <span class="text-xl font-black text-slate-800 uppercase">🛑 Inactive Customer (No FFB supply in past 1 month)</span>
+                <a href="inactive-customer.html" class="glass-panel p-8 rounded-[2.5rem] border-l-[12px] border-slate-700 block">
+                    <span class="text-xl font-black text-slate-800 uppercase">🛑 Inactive Customer</span>
                 </a>
-                <a href="follow-up.html" class="glass-panel p-8 rounded-[2.5rem] border-l-[12px] border-red-500 hover:translate-x-1 transition-transform block">
+                <a href="follow-up.html" class="glass-panel p-8 rounded-[2.5rem] border-l-[12px] border-red-500 block">
                     <span class="text-xl font-black text-slate-800 uppercase">🚩 Follow Up Cases</span>
                 </a>
-                <a href="report.html" class="glass-panel p-8 rounded-[2.5rem] border-l-[12px] border-amber-500 hover:translate-x-1 transition-transform block">
+                <a href="report.html" class="glass-panel p-8 rounded-[2.5rem] border-l-[12px] border-amber-500 block">
                     <span class="text-xl font-black text-slate-800 uppercase">📊 Survey Report</span>
                 </a>
             </div>
@@ -178,84 +172,63 @@
             const toggleBtn = document.getElementById('toggle-auth-btn');
             const forgotBtn = document.getElementById('forgot-password-btn');
             const signupFields = document.getElementById('signup-fields');
-            const authTitle = document.getElementById('auth-title');
-            const verifyMsg = document.getElementById('verify-msg');
-            const forgotContainer = document.getElementById('forgot-password-container');
             const updatePassBtn = document.getElementById('update-pass-btn');
-
-            toggleBtn.addEventListener('click', () => {
-                const isCurrentlyLogin = (mainBtn.innerText === 'LOGIN');
-                verifyMsg.classList.add('hidden');
-                if (isCurrentlyLogin) {
-                    signupFields.classList.remove('hidden');
-                    forgotContainer.classList.add('hidden');
-                    mainBtn.innerText = 'SIGN UP';
-                    authTitle.innerText = 'Staff Registration';
-                    toggleBtn.innerText = 'Back to Login';
-                } else {
-                    signupFields.classList.add('hidden');
-                    forgotContainer.classList.remove('hidden');
-                    mainBtn.innerText = 'LOGIN';
-                    authTitle.innerText = 'Staff Login';
-                    toggleBtn.innerText = 'Create Staff Account';
-                }
-            });
 
             forgotBtn.addEventListener('click', async () => {
                 const email = document.getElementById('email').value;
-                if (!email) return alert("Please enter your email address first.");
+                if (!email) return alert("Please enter your email.");
                 
                 const { error } = await _supabase.auth.resetPasswordForEmail(email, {
-                    redirectTo: 'https://mjmgroup.github.io/CustomerSurvey/',
+                    // This creates an absolute URL specifically for GitHub Pages
+                    redirectTo: window.location.origin + window.location.pathname,
                 });
 
-                if (error) {
-                    alert("Error: " + error.message);
-                } else {
-                    alert("Password reset link sent! Please check your email.");
-                }
+                if (error) alert(error.message);
+                else alert("Password reset link sent! Check your inbox.");
             });
 
             updatePassBtn.addEventListener('click', async () => {
                 const newPassword = document.getElementById('new-password').value;
                 if (!newPassword) return alert("Please enter a new password.");
-                
                 const { error } = await _supabase.auth.updateUser({ password: newPassword });
-                if (error) {
-                    alert("Error: " + error.message);
-                } else {
-                    alert("Password updated successfully! Redirecting to login...");
+                if (error) alert(error.message);
+                else {
+                    alert("Success! Please login with your new password.");
                     await _supabase.auth.signOut();
                     location.reload();
+                }
+            });
+
+            toggleBtn.addEventListener('click', () => {
+                const isLogin = (mainBtn.innerText === 'LOGIN');
+                if (isLogin) {
+                    signupFields.classList.remove('hidden');
+                    document.getElementById('forgot-password-container').classList.add('hidden');
+                    mainBtn.innerText = 'SIGN UP';
+                    toggleBtn.innerText = 'Back to Login';
+                } else {
+                    signupFields.classList.add('hidden');
+                    document.getElementById('forgot-password-container').classList.remove('hidden');
+                    mainBtn.innerText = 'LOGIN';
+                    toggleBtn.innerText = 'Create Staff Account';
                 }
             });
 
             mainBtn.addEventListener('click', async () => {
                 const email = document.getElementById('email').value;
                 const password = document.getElementById('password').value;
-
                 if (mainBtn.innerText === 'SIGN UP') {
                     const fullName = document.getElementById('staff-name').value;
                     const branch = document.getElementById('branch-select').value;
-
-                    if(!fullName || !branch) return alert("Please enter name and branch.");
-
                     const { data, error } = await _supabase.auth.signUp({ email, password });
-                    
                     if (error) return alert(error.message);
-
                     if (data.user) {
-                        const { error: pErr } = await _supabase.from('profiles').insert([
-                            { id: data.user.id, full_name: fullName, branch: branch, email: email }
-                        ]);
-                        
-                        verifyMsg.classList.remove('hidden');
-                        mainBtn.disabled = true;
-                        mainBtn.classList.add('opacity-50');
+                        await _supabase.from('profiles').insert([{ id: data.user.id, full_name: fullName, branch, email }]);
+                        document.getElementById('verify-msg').classList.remove('hidden');
                     }
                 } else {
                     const { error } = await _supabase.auth.signInWithPassword({ email, password });
-                    if (error) alert("Login Failed: " + error.message);
+                    if (error) alert(error.message);
                 }
             });
 
@@ -268,11 +241,9 @@
                 } else if (session && !isRecovering) {
                     document.getElementById('auth-section').classList.add('hidden');
                     document.getElementById('dashboard').classList.remove('hidden');
-                    document.getElementById('reset-section').classList.add('hidden');
                 } else if (!session) {
                     document.getElementById('auth-section').classList.remove('hidden');
                     document.getElementById('dashboard').classList.add('hidden');
-                    document.getElementById('reset-section').classList.add('hidden');
                 }
             });
 
