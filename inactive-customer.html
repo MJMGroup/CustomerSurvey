@@ -83,10 +83,10 @@
                             <textarea id="iq_advice" class="w-full p-3 border rounded-xl min-h-[80px] mt-2"></textarea>
                         </div>
                         <div class="space-y-3">
-                            <label class="form-label italic">3. Current competitor prices (if known)</label>
-                            <div class="grid grid-cols-2 gap-2"><input type="text" id="ib1" placeholder="Competitor 1" class="p-3 border rounded-xl text-xs"><input type="number" id="ip1" placeholder="Price" class="p-3 border rounded-xl text-xs"></div>
-                            <div class="grid grid-cols-2 gap-2"><input type="text" id="ib2" placeholder="Competitor 2" class="p-3 border rounded-xl text-xs"><input type="number" id="ip2" placeholder="Price" class="p-3 border rounded-xl text-xs"></div>
-                            <div class="grid grid-cols-2 gap-2"><input type="text" id="ib3" placeholder="Competitor 3" class="p-3 border rounded-xl text-xs"><input type="number" id="ip3" placeholder="Price" class="p-3 border rounded-xl text-xs"></div>
+                            <label class="form-label italic">3. Current supply to? </label>
+                            <div class="grid grid-cols-2 gap-2"><input type="text" id="ib1" placeholder="Name of mill / collection center" class="p-3 border rounded-xl text-xs"><input type="number" id="ip1" placeholder="Offered Price (RM/mt)" class="p-3 border rounded-xl text-xs"></div>
+                            <div class="grid grid-cols-2 gap-2"><input type="text" id="ib2" placeholder="Name of mill / collection center" class="p-3 border rounded-xl text-xs"><input type="number" id="ip2" placeholder="Offered Price (RM/mt)" class="p-3 border rounded-xl text-xs"></div>
+                            <div class="grid grid-cols-2 gap-2"><input type="text" id="ib3" placeholder="Name of mill / collection center" class="p-3 border rounded-xl text-xs"><input type="number" id="ip3" placeholder="Offered Price (RM/mt)" class="p-3 border rounded-xl text-xs"></div>
                         </div>
                         <div class="p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-center justify-between">
                             <label class="text-xs font-bold text-blue-900 uppercase pr-4 italic">4. Need marketing team to negotiate special pricing?</label>
@@ -105,8 +105,14 @@
         async function performSearch() {
             const val = document.getElementById('search_input').value;
             if (val.length < 3) return;
-            // Fetch records - unique name filter removed to show all estates
-            const { data } = await _supabase.from('ffb_logs').select('*').or(`customer_name.ilike.%${val}%,location.ilike.%${val}%,notes.ilike.%${val}%`).order('created_at', { ascending: false });
+
+            // FIX: Exclude Surveys from results so only estate profiles show up
+            const { data } = await _supabase.from('ffb_logs')
+                .select('*')
+                .not('log_type', 'ilike', '%Survey%')
+                .or(`customer_name.ilike.%${val}%,location.ilike.%${val}%`)
+                .order('created_at', { ascending: false });
+
             const resDiv = document.getElementById('search-results');
             
             if (data?.length > 0) {
@@ -123,7 +129,7 @@
                     </div>`;
                 }).join('');
             } else {
-                resDiv.innerHTML = `<p class="text-center text-slate-400 font-bold uppercase text-xs py-4">No results found.</p>`;
+                resDiv.innerHTML = `<p class="text-center text-slate-400 font-bold uppercase text-xs py-4">No profiles found.</p>`;
             }
         }
 
@@ -162,7 +168,6 @@
             const notesStr = currentData.notes || "";
             document.getElementById('f_contact').value = notesStr.match(/Contact:\s*([^.]+)/)?.[1] || "";
             
-            // Fix: Handle soil checkbox ticking
             const soilPart = notesStr.match(/Soil:\s*([^.]+)/)?.[1] || "";
             document.getElementById('soil_mineral').checked = soilPart.includes('Mineral');
             document.getElementById('soil_peat').checked = soilPart.includes('Peat');
@@ -196,14 +201,12 @@
         }
 
         async function submitUpdate() {
-            // Overwrites ONLY the selected record
             const { error } = await _supabase.from('ffb_logs').update(getPayload()).eq('id', currentData.id);
             if (!error) { alert("Profile Updated!"); location.reload(); }
         }
 
         async function submitNewEstate() {
             const user = await checkAuth();
-            // Inserts a BRAND NEW record
             const payload = { 
                 ...getPayload(), 
                 log_type: 'New Estate Added', 
