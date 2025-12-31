@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Database - MJM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f0f4f1; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); }
+        #details-modal { transition: opacity 0.3s ease; }
+        .modal-content { transition: transform 0.3s ease-out; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-6 glass-panel p-6 rounded-[2.5rem]">
+            <div>
+                <h1 class="text-2xl font-black text-slate-800 uppercase italic">👥 Customer Master Database</h1>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Unified Customer Profiles</p>
+            </div>
+            <div class="flex gap-2">
+                <a href="index.html" class="bg-white border px-6 py-2 rounded-xl font-bold text-sm uppercase">Back</a>
+            </div>
+        </div>
+
+        <div class="mb-6 glass-panel p-4 rounded-3xl">
+            <input type="text" id="custSearch" onkeyup="filterCustomers()" placeholder="🔍 Search Customer Name or Branch..." 
+                   class="w-full p-4 rounded-2xl border border-slate-200 shadow-sm outline-none font-bold">
+        </div>
+
+        <div class="glass-panel rounded-[2.5rem] overflow-hidden bg-white shadow-xl border-2 border-slate-800">
+            <div class="bg-slate-800 p-4 text-white font-black text-xs uppercase italic tracking-widest">Customer List</div>
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="p-4 text-[10px] font-black text-slate-400 uppercase border-b">Customer Name</th>
+                        <th class="p-4 text-[10px] font-black text-slate-400 uppercase border-b">Branch</th>
+                        <th class="p-4 text-[10px] font-black text-slate-400 uppercase border-b">Latest Status</th>
+                        <th class="p-4 text-[10px] font-black text-slate-400 uppercase border-b text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="customer-list" class="divide-y divide-slate-100"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="details-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm opacity-0">
+        <div class="modal-content glass-panel w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-[2.5rem] shadow-2xl translate-y-8">
+            <div class="p-6 border-b flex justify-between items-center bg-slate-50">
+                <div>
+                    <h3 id="modal-title" class="text-lg font-black text-slate-800 uppercase italic">Profile</h3>
+                    <p id="modal-type" class="text-[10px] font-black text-blue-600 uppercase tracking-widest"></p>
+                </div>
+                <button onclick="closeModal()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white border shadow-sm text-slate-400 hover:text-red-500 font-bold">✕</button>
+            </div>
+            <div id="modal-body" class="p-8 overflow-y-auto max-h-[60vh] space-y-4 bg-white"></div>
+            <div class="p-6 bg-slate-50 border-t text-right">
+                <button onclick="closeModal()" class="px-8 py-3 bg-slate-800 text-white rounded-xl font-bold uppercase text-xs tracking-widest">Close View</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let customersMap = {};
+
+        async function loadData() {
+            const { data, error } = await _supabase.from('ffb_logs').select('*').order('created_at', { ascending: false });
+            if(error) return;
+
+            // Grouping logic: Take ONLY the latest entry for each customer name
+            data.forEach(log => {
+                if (!customersMap[log.customer_name]) {
+                    customersMap[log.customer_name] = log;
+                }
+            });
+            renderTable(Object.values(customersMap));
+        }
+
+        function renderTable(list) {
+            const container = document.getElementById('customer-list');
+            container.innerHTML = list.map(c => `
+                <tr class="text-xs hover:bg-slate-50">
+                    <td class="p-4 font-black text-slate-800 uppercase">${c.customer_name}</td>
+                    <td class="p-4 font-bold text-slate-500 uppercase">${c.branch || 'N/A'}</td>
+                    <td class="p-4">
+                        <span class="px-3 py-1 bg-blue-50 text-blue-600 rounded-full font-black text-[9px] uppercase border border-blue-100">
+                            ${c.log_type}
+                        </span>
+                    </td>
+                    <td class="p-4 text-center">
+                        <button onclick="viewProfile('${c.customer_name.replace(/'/g, "\\'")}')" class="font-black text-blue-600 hover:underline uppercase text-[10px]">View Profile →</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterCustomers() {
+            const q = document.getElementById('custSearch').value.toLowerCase();
+            const filtered = Object.values(customersMap).filter(c => 
+                c.customer_name.toLowerCase().includes(q) || 
+                (c.branch && c.branch.toLowerCase().includes(q))
+            );
+            renderTable(filtered);
+        }
+
+        function viewProfile(name) {
+            const item = customersMap[name];
+            document.getElementById('modal-title').innerText = item.customer_name;
+            document.getElementById('modal-type').innerText = "Last Status: " + item.log_type;
+
+            const questionMap = {
+                "Speed": "1. CUSTOMER SATISFACTION WITH OVERALL SERVICE SPEED",
+                "Loader": "2. CUSTOMER SATISFACTION ON RAMP LOADER SERVICE",
+                "WB": "3. CUSTOMER SATISFACTION WITH WEIGHBRIDGE SERVICE",
+                "OtherRamps": "4. Other ramp offered price (RM/mt)",
+                "OTHERRAMPS": "4. Other ramp offered price (RM/mt)",
+                "WAChannel": "5. is customer followed our whatapps channel?",
+                "Likes": "6. WHAT DOES THE CUSTOMER LIKE ABOUT US?",
+                "Issues": "7. ANY ISSUES OR CONCERNS RAISED TODAY?",
+                "Reason": "1. What is the reason for not supplying FFB?",
+                "Advice": "2. Any advice or suggestions for MJM?"
+            };
+
+            const noteParts = item.notes ? item.notes.split(' | ') : [];
+            const formattedNotes = noteParts.map(p => {
+                const parts = p.split(':');
+                let key = parts[0] ? parts[0].trim().replace('Inactive Survey', '').replace('Active Survey', '').trim() : "";
+                let val = parts.slice(1).join(':').trim();
+                if(!key && !val) return '';
+                const fullQ = questionMap[key] || key;
+                return `<div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-sm">
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 italic">${fullQ}</p>
+                    <p class="text-slate-800 font-bold">${val || 'N/A'}</p>
+                </div>`;
+            }).join('');
+
+            const staff = item.pic_email ? item.pic_email.split('@')[0].toUpperCase() : 'N/A';
+            document.getElementById('modal-body').innerHTML = `
+                <div class="mb-6 grid grid-cols-2 gap-3">
+                    <div class="p-4 bg-white border rounded-2xl"><span class="block text-[8px] font-black text-slate-400 uppercase">Tonnage</span><p class="font-bold">${item.tonnage || '0'} mt</p></div>
+                    <div class="p-4 bg-blue-50 border border-blue-100 rounded-2xl"><span class="block text-[8px] font-black text-blue-400 uppercase">Staff Assigned</span><p class="font-bold text-blue-900">${staff}</p></div>
+                </div>
+                <div class="space-y-3">${formattedNotes}</div>`;
+
+            const modal = document.getElementById('details-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('.modal-content').classList.remove('translate-y-8'); }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('details-modal');
+            modal.classList.add('opacity-0');
+            modal.querySelector('.modal-content').classList.add('translate-y-8');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>
