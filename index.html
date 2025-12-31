@@ -120,6 +120,14 @@
         </div>
     </div>
 
+    <div id="reset-section" class="hidden flex items-center justify-center min-h-screen p-4">
+        <div class="glass-panel p-10 rounded-[3rem] w-full max-w-md text-center">
+            <h2 class="text-xl font-black text-slate-800 uppercase mb-6">Set New Password</h2>
+            <input type="password" id="new-password" placeholder="New Password" class="w-full p-4 input-style rounded-2xl outline-none font-semibold mb-4">
+            <button id="update-pass-btn" class="w-full btn-primary text-white py-4 rounded-2xl font-bold uppercase tracking-widest shadow-lg">Update Password</button>
+        </div>
+    </div>
+
     <div id="dashboard" class="hidden p-4 md:p-8">
         <div class="max-w-4xl mx-auto">
             <div class="flex flex-col items-center mb-10 glass-panel p-8 rounded-[2.5rem] relative">
@@ -159,6 +167,8 @@
         const SUPABASE_KEY = 'sb_publishable_-51Tg7zfwk5PsBWw2dzulw_eyUM-Mzu';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        let isRecovering = false;
+
         document.addEventListener('DOMContentLoaded', () => {
             const mainBtn = document.getElementById('main-auth-btn');
             const toggleBtn = document.getElementById('toggle-auth-btn');
@@ -167,6 +177,7 @@
             const authTitle = document.getElementById('auth-title');
             const verifyMsg = document.getElementById('verify-msg');
             const forgotContainer = document.getElementById('forgot-password-container');
+            const updatePassBtn = document.getElementById('update-pass-btn');
 
             toggleBtn.addEventListener('click', () => {
                 const isCurrentlyLogin = (mainBtn.innerText === 'LOGIN');
@@ -201,6 +212,18 @@
                 }
             });
 
+            updatePassBtn.addEventListener('click', async () => {
+                const newPassword = document.getElementById('new-password').value;
+                if (!newPassword) return alert("Please enter a new password.");
+                const { error } = await _supabase.auth.updateUser({ password: newPassword });
+                if (error) alert(error.message);
+                else {
+                    alert("Success! Please login with your new password.");
+                    await _supabase.auth.signOut();
+                    location.reload();
+                }
+            });
+
             mainBtn.addEventListener('click', async () => {
                 const email = document.getElementById('email').value;
                 const password = document.getElementById('password').value;
@@ -211,7 +234,13 @@
 
                     if(!fullName || !branch) return alert("Please enter name and branch.");
 
-                    const { data, error } = await _supabase.auth.signUp({ email, password });
+                    const { data, error } = await _supabase.auth.signUp({ 
+                        email, 
+                        password,
+                        options: {
+                            emailRedirectTo: 'https://mjmgroup.github.io/CustomerSurvey/'
+                        }
+                    });
                     
                     if (error) return alert(error.message);
 
@@ -231,12 +260,19 @@
             });
 
             _supabase.auth.onAuthStateChange((event, session) => {
-                if (session) {
+                if (event === 'PASSWORD_RECOVERY') {
+                    isRecovering = true;
+                    document.getElementById('auth-section').classList.add('hidden');
+                    document.getElementById('dashboard').classList.add('hidden');
+                    document.getElementById('reset-section').classList.remove('hidden');
+                } else if (session && !isRecovering) {
                     document.getElementById('auth-section').classList.add('hidden');
                     document.getElementById('dashboard').classList.remove('hidden');
+                    document.getElementById('reset-section').classList.add('hidden');
                 } else {
                     document.getElementById('auth-section').classList.remove('hidden');
                     document.getElementById('dashboard').classList.add('hidden');
+                    document.getElementById('reset-section').classList.add('hidden');
                 }
             });
 
