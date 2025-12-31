@@ -35,13 +35,11 @@
             <div id="profile-area" class="hidden mt-6 space-y-6">
                 <div id="profile-display" class="bg-slate-50 p-6 rounded-3xl border-2 border-slate-100 space-y-4">
                     <h2 class="text-xl font-black text-slate-800 border-b pb-2" id="d_name"></h2>
-                    
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                         <div class="bg-white p-3 rounded-xl border"><p class="form-label">📍 Location</p><p id="d_loc" class="font-bold text-slate-600 truncate text-xs"></p></div>
                         <div class="bg-white p-3 rounded-xl border"><p class="form-label">📏 Area (Ha)</p><p id="d_size" class="font-bold"></p></div>
                         <div class="bg-white p-3 rounded-xl border"><p class="form-label">📊 Monthly Supply</p><p id="d_ton" class="font-bold text-emerald-600"></p></div>
                     </div>
-
                     <div class="flex gap-3 pt-2">
                         <button onclick="showMode('update')" class="flex-1 bg-slate-800 text-white py-3 rounded-xl text-xs font-bold uppercase">Update Profile</button>
                         <button onclick="showMode('add')" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl text-xs font-bold uppercase">Add New Estate</button>
@@ -53,7 +51,6 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="md:col-span-2"><label class="form-label">Customer / Company Name</label><input type="text" id="f_name" class="w-full p-3 border rounded-xl"></div>
                         <div class="md:col-span-2"><label class="form-label">Contact Number</label><input type="text" id="f_contact" class="w-full p-3 border rounded-xl"></div>
-                        
                         <div class="md:col-span-2 bg-slate-50 p-4 rounded-xl border">
                             <label class="form-label">Type of Soil</label>
                             <div class="flex gap-6 mt-2">
@@ -61,20 +58,17 @@
                                 <label class="soil-box"><input type="checkbox" id="soil_peat" class="w-5 h-5 accent-blue-600"> PEAT SOIL AREA</label>
                             </div>
                         </div>
-
                         <div><label class="form-label">Total Area (Ha)</label><input type="number" id="f_area" class="w-full p-3 border rounded-xl"></div>
                         <div><label class="form-label">Estimated Monthly Supply (mt)</label><input type="number" id="f_ton" class="w-full p-3 border rounded-xl"></div>
                         <div><label class="form-label">Estate Location</label><input type="text" id="f_loc" class="w-full p-3 border rounded-xl"></div>
                         <div><label class="form-label">Google Location Link</label><input type="text" id="f_google" placeholder="http://..." class="w-full p-3 border rounded-xl"></div>
                     </div>
-
                     <div class="space-y-3">
                         <label class="form-label italic">Currently supply to?</label>
                         <div class="grid grid-cols-2 gap-2"><input type="text" id="sup1_n" placeholder="Name of mill / collection center" class="p-3 border rounded-xl text-xs"><input type="number" id="sup1_p" placeholder="Offered price (RM/mt)" class="p-3 border rounded-xl text-xs"></div>
                         <div class="grid grid-cols-2 gap-2"><input type="text" id="sup2_n" placeholder="Name of mill / collection center" class="p-3 border rounded-xl text-xs"><input type="number" id="sup2_p" placeholder="Offered price (RM/mt)" class="p-3 border rounded-xl text-xs"></div>
                         <div class="grid grid-cols-2 gap-2"><input type="text" id="sup3_n" placeholder="Name of mill / collection center" class="p-3 border rounded-xl text-xs"><input type="number" id="sup3_p" placeholder="Offered price (RM/mt)" class="p-3 border rounded-xl text-xs"></div>
                     </div>
-
                     <div class="flex gap-2">
                         <button id="save-btn" class="flex-1 bg-emerald-600 text-white py-4 rounded-xl font-bold uppercase shadow-lg">Save Profile</button>
                         <button onclick="hideEditor()" class="px-6 bg-slate-100 text-slate-500 rounded-xl font-bold uppercase text-xs">Cancel</button>
@@ -85,40 +79,20 @@
 
                 <form id="ffb-form" class="hidden space-y-6 bg-white p-6 rounded-3xl border-2 border-slate-700 shadow-xl">
                     <h3 class="font-black text-slate-700 italic uppercase underline">Reason for Inactivity</h3>
-                    
                     <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 uppercase">1. What is the reason for not supplying FFB to us?</label>
-                            <textarea id="iq_reason" class="w-full p-3 border rounded-xl outline-none min-h-[80px] mt-2" placeholder="Type reason here..."></textarea>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 uppercase">2. What is the advice from customer for us to improve?</label>
-                            <textarea id="iq_advice" class="w-full p-3 border rounded-xl outline-none min-h-[80px] mt-2" placeholder="Type advice here..."></textarea>
-                        </div>
-                        
+                        <div><label class="block text-sm font-bold text-slate-700 uppercase">1. What is the reason for not supplying FFB to us?</label><textarea id="iq_reason" class="w-full p-3 border rounded-xl outline-none min-h-[80px] mt-2" placeholder="Type reason here..."></textarea></div>
+                        <div><label class="block text-sm font-bold text-slate-700 uppercase">2. What is the advice from customer for us to improve?</label><textarea id="iq_advice" class="w-full p-3 border rounded-xl outline-none min-h-[80px] mt-2" placeholder="Type advice here..."></textarea></div>
                         <div class="space-y-3">
                             <label class="block text-sm font-bold text-slate-700 uppercase">3. Currently supply to?</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                <input type="text" id="ib1" placeholder="Name of mill / collection center" class="p-3 border rounded-xl text-sm">
-                                <input type="number" id="ip1" placeholder="Offered price (RM/mt)" class="p-3 border rounded-xl text-sm">
-                            </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <input type="text" id="ib2" placeholder="Name of mill / collection center" class="p-3 border rounded-xl text-sm">
-                                <input type="number" id="ip2" placeholder="Offered price (RM/mt)" class="p-3 border rounded-xl text-sm">
-                            </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <input type="text" id="ib3" placeholder="Name of mill / collection center" class="p-3 border rounded-xl text-sm">
-                                <input type="number" id="ip3" placeholder="Offered price (RM/mt)" class="p-3 border rounded-xl text-sm">
-                            </div>
+                            <div class="grid grid-cols-2 gap-2"><input type="text" id="ib1" placeholder="Name of mill / collection center" class="p-3 border rounded-xl text-sm"><input type="number" id="ip1" placeholder="Offered price (RM/mt)" class="p-3 border rounded-xl text-sm"></div>
+                            <div class="grid grid-cols-2 gap-2"><input type="text" id="ib2" placeholder="Name of mill / collection center" class="p-3 border rounded-xl text-sm"><input type="number" id="ip2" placeholder="Offered price (RM/mt)" class="p-3 border rounded-xl text-sm"></div>
+                            <div class="grid grid-cols-2 gap-2"><input type="text" id="ib3" placeholder="Name of mill / collection center" class="p-3 border rounded-xl text-sm"><input type="number" id="ip3" placeholder="Offered price (RM/mt)" class="p-3 border rounded-xl text-sm"></div>
                         </div>
-
                         <div class="p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-center justify-between">
                             <label class="text-xs font-bold text-blue-900 uppercase pr-4">4. Need marketing team to approach for pricing negotiation?</label>
                             <input type="checkbox" id="iq_negotiate" class="w-6 h-6 accent-blue-600">
                         </div>
                     </div>
-                    
                     <button type="submit" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold uppercase shadow-xl hover:bg-black transition-colors">Submit Inactive Report</button>
                 </form>
             </div>
@@ -135,7 +109,13 @@
             const resDiv = document.getElementById('search-results');
             
             if (data?.length > 0) {
-                resDiv.innerHTML = data.map(rec => {
+                const seen = new Set();
+                const uniqueData = data.filter(item => {
+                    const name = item.customer_name.toLowerCase().trim();
+                    return seen.has(name) ? false : seen.add(name);
+                });
+
+                resDiv.innerHTML = uniqueData.map(rec => {
                     const estTon = rec.notes?.match(/Est Monthly:\s*([\d.]+)/)?.[1] || "0";
                     return `
                     <div onclick='selectCustomer(${JSON.stringify(rec).replace(/'/g, "&apos;")}, this)' class="customer-card cursor-pointer p-4 bg-white border rounded-2xl shadow-sm hover:border-slate-400">
@@ -179,7 +159,6 @@
             const container = document.getElementById('editor-container');
             container.classList.remove('hidden');
             document.getElementById('ffb-form').classList.add('hidden');
-            
             if(mode === 'new') {
                 document.getElementById('profile-area').classList.remove('hidden');
                 document.getElementById('profile-display').classList.add('hidden');
@@ -214,7 +193,6 @@
             const soil = [];
             if(document.getElementById('soil_mineral')?.checked) soil.push('Mineral');
             if(document.getElementById('soil_peat')?.checked) soil.push('Peat');
-            
             return {
                 customer_name: document.getElementById('f_name').value,
                 location: `${document.getElementById('f_loc').value} (Link: ${document.getElementById('f_google').value})`,
@@ -238,16 +216,13 @@
         document.getElementById('ffb-form').onsubmit = async (e) => {
             e.preventDefault();
             const user = await checkAuth();
-            
             const comps = [];
             for(let i=1; i<=3; i++) {
                 const n = document.getElementById('ib'+i).value;
                 const p = document.getElementById('ip'+i).value;
                 if(n) comps.push(`${n}(RM${p})`);
             }
-
             const finalNotes = `Inactive Survey: Reason:${document.getElementById('iq_reason').value} | Advice:${document.getElementById('iq_advice').value} | Competitors:${comps.join(',')}`;
-
             const payload = { 
                 customer_name: currentData.customer_name, 
                 location: currentData.location, 
@@ -257,7 +232,6 @@
                 branch: userBranch, 
                 pic_email: user.email 
             };
-
             const { error } = await _supabase.from('ffb_logs').insert([payload]);
             if (!error) { alert("Inactive Record Saved!"); location.reload(); }
         };
