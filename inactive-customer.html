@@ -13,9 +13,29 @@
         .selected-card { border-color: #3b82f6 !important; background-color: #eff6ff !important; }
         .form-label { display: block; font-size: 0.75rem; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 0.25rem; }
         .soil-box { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; color: #1e293b; }
+        /* Style for the "Look In" log entries */
+        .log-entry { border-left: 4px solid #cbd5e1; padding-left: 1rem; position: relative; }
+        .log-entry::before { content: ''; position: absolute; left: -10px; top: 0; width: 16px; height: 16px; background: white; border: 4px solid #94a3b8; border-radius: 50%; }
+
+        /* Modal Style Top-up */
+        #history-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: white; width: 100%; max-width: 600px; max-height: 80vh; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-900 p-4 md:p-8">
+
+    <div id="history-modal" onclick="closeModal(event)">
+        <div class="modal-content shadow-2xl animate-in fade-in zoom-in duration-200" onclick="event.stopPropagation()">
+            <div class="p-6 border-b flex justify-between items-center bg-slate-50">
+                <div>
+                    <h3 class="font-black text-slate-800 uppercase tracking-tight">Survey History</h3>
+                    <p id="modal-cust-name" class="text-xs font-bold text-blue-600"></p>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+            </div>
+            <div id="history-list-modal" class="p-6 overflow-y-auto space-y-4 bg-white"></div>
+        </div>
+    </div>
 
     <div class="max-w-4xl mx-auto">
         <div class="flex justify-between items-center mb-8 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
@@ -56,16 +76,16 @@
                     <div class="flex gap-3 pt-2">
                         <button onclick="showMode('update')" class="flex-1 bg-slate-800 text-white py-3 rounded-xl text-xs font-bold uppercase">Update Profile</button>
                         <button onclick="showMode('add')" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl text-xs font-bold uppercase">Add New Estate</button>
-                        <button onclick="toggleHistory()" class="flex-1 bg-amber-500 text-white py-3 rounded-xl text-xs font-bold uppercase">📜 View History</button>
+                        <button id="profile-look-in" class="flex-1 bg-slate-600 text-white py-3 rounded-xl text-xs font-bold uppercase">🔍 Look In</button>
                     </div>
                 </div>
 
-                <div id="history-container" class="hidden space-y-4 bg-slate-100 p-4 rounded-3xl border-2 border-slate-200">
-                    <div class="flex justify-between items-center px-2">
-                        <h3 class="font-black text-slate-600 uppercase italic text-sm underline">Survey Done History</h3>
-                        <button onclick="toggleHistory()" class="text-[10px] font-bold text-slate-400 uppercase">Close History</button>
+                <div id="history-container" class="hidden space-y-4 bg-slate-900 p-6 rounded-3xl border-2 border-slate-800 shadow-2xl">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-black text-white uppercase italic text-sm tracking-widest">📋 Activity Log</h3>
+                        <button onclick="hideHistory()" class="text-[10px] font-bold text-slate-400 uppercase hover:text-white">Close [X]</button>
                     </div>
-                    <div id="history-list" class="space-y-3 max-h-[300px] overflow-y-auto p-2">
+                    <div id="history-list" class="space-y-6 max-h-[400px] overflow-y-auto pr-2 py-4">
                         </div>
                 </div>
 
@@ -173,19 +193,25 @@
             renderList(data, val);
         }
 
+        /* AMENDED: renderList now includes the "Look In" button beside the name */
         function renderList(data, searchVal = "") {
             const resDiv = document.getElementById('search-results');
             if (data?.length > 0) {
                 resDiv.innerHTML = data.map(rec => {
                     const estTon = rec.notes?.match(/Est Monthly:\s*([\d.]+)/)?.[1] || "0";
                     return `
-                    <div onclick='selectCustomer(${JSON.stringify(rec).replace(/'/g, "&apos;")}, this)' class="customer-card cursor-pointer p-4 bg-white border rounded-2xl shadow-sm hover:border-slate-400 mb-2">
-                        <div class="flex justify-between font-black text-slate-800"><span>${rec.customer_name}</span></div>
-                        <div class="text-[10px] text-slate-500 font-semibold mt-1 uppercase">📍 ${rec.location.split(' (Link:')[0]}</div>
-                        <div class="flex gap-4 mt-2">
-                            <span class="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">📏 ${rec.area_size || 0} Ha</span>
-                            <span class="text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded">📊 ${estTon} MT/mo</span>
+                    <div class="customer-card p-4 bg-white border rounded-2xl shadow-sm hover:border-slate-400 mb-2 flex justify-between items-center">
+                        <div onclick='selectCustomer(${JSON.stringify(rec).replace(/'/g, "&apos;")}, this.parentElement)' class="flex-1 cursor-pointer">
+                            <div class="font-black text-slate-800"><span>${rec.customer_name}</span></div>
+                            <div class="text-[10px] text-slate-500 font-semibold mt-1 uppercase">📍 ${rec.location.split(' (Link:')[0]}</div>
+                            <div class="flex gap-4 mt-2">
+                                <span class="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">📏 ${rec.area_size || 0} Ha</span>
+                                <span class="text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded">📊 ${estTon} MT/mo</span>
+                            </div>
                         </div>
+                        <button onclick='viewHistoryModal("${rec.customer_name}")' class="ml-4 bg-blue-50 text-blue-700 px-3 py-2 rounded-xl text-[10px] font-black uppercase border border-blue-100 hover:bg-blue-600 hover:text-white transition-all">
+                            Look In
+                        </button>
                     </div>`;
                 }).join('');
             } else {
@@ -209,6 +235,7 @@
             document.getElementById('editor-container').scrollIntoView({ behavior: 'smooth' });
         }
 
+        /* AMENDED: selectCustomer now assigns the profile Look In button to the modal */
         function selectCustomer(data, el) {
             currentData = data;
             document.querySelectorAll('.customer-card').forEach(c => c.classList.remove('selected-card'));
@@ -222,41 +249,86 @@
             document.getElementById('d_loc').innerText = data.location.split(' (Link:')[0];
             document.getElementById('d_size').innerText = (data.area_size || 0) + " Ha";
             document.getElementById('d_ton').innerText = (data.notes?.match(/Est Monthly:\s*([\d.]+)/)?.[1] || 0) + " mt";
+            
+            // Assign the profile display "Look In" button to open the modal
+            document.getElementById('profile-look-in').onclick = () => viewHistoryModal(data.customer_name);
         }
 
-        // ADDED: Toggle History and Fetch Records
-        async function toggleHistory() {
-            const container = document.getElementById('history-container');
-            if (!container.classList.contains('hidden')) {
-                container.classList.add('hidden');
+        /* TOP-UP: History Modal Logic (Matches Active Module style) */
+        async function viewHistoryModal(customerName) {
+            const modal = document.getElementById('history-modal');
+            const list = document.getElementById('history-list-modal');
+            const nameHeader = document.getElementById('modal-cust-name');
+            modal.style.display = 'flex';
+            nameHeader.innerText = customerName;
+            list.innerHTML = '<p class="text-center text-xs font-bold text-slate-400 animate-pulse">FETCHING SURVEYS...</p>';
+            
+            const { data, error } = await _supabase.from('ffb_logs')
+                .select('*')
+                .eq('customer_name', customerName)
+                .ilike('log_type', '%Survey%')
+                .order('created_at', { ascending: false });
+
+            if (!data || data.length === 0) {
+                list.innerHTML = '<div class="text-center py-10 text-slate-400 font-bold text-xs">NO SURVEY HISTORY FOUND</div>';
                 return;
             }
+            list.innerHTML = data.map(item => {
+                const date = new Date(item.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                const cleanNotes = item.notes ? item.notes.replace(/\|/g, '<br>') : 'No details';
+                return `
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-[10px] font-black bg-slate-200 px-2 py-0.5 rounded text-slate-600">${date}</span>
+                        <span class="text-[9px] font-bold text-blue-600 uppercase italic">${item.log_type}</span>
+                    </div>
+                    <div class="text-[11px] font-medium text-slate-600 leading-relaxed">${cleanNotes}</div>
+                    <div class="mt-2 text-[9px] text-slate-400 font-bold italic">By: ${item.pic_email}</div>
+                </div>`;
+            }).join('');
+        }
 
+        function closeModal() { 
+            document.getElementById('history-modal').style.display = 'none'; 
+        }
+
+        /* ORIGINAL: Activity Log Logic (Kept as backup) */
+        async function lookIn() {
+            const container = document.getElementById('history-container');
             container.classList.remove('hidden');
+            
             const listDiv = document.getElementById('history-list');
-            listDiv.innerHTML = '<p class="text-center py-4 text-xs font-bold text-slate-400">Loading history...</p>';
+            listDiv.innerHTML = '<p class="text-center py-4 text-xs font-bold text-slate-400 animate-pulse">SEARCHING RECORDS...</p>';
 
             const { data } = await _supabase.from('ffb_logs')
                 .select('*')
                 .eq('customer_name', currentData.customer_name)
-                .eq('log_type', 'Inactive Survey')
                 .order('created_at', { ascending: false });
 
             if (data?.length > 0) {
                 listDiv.innerHTML = data.map(log => `
-                <div class="bg-white p-3 rounded-xl border shadow-sm space-y-2">
-                    <div class="flex justify-between border-b pb-1">
-                        <span class="text-[10px] font-black text-slate-400 uppercase">${new Date(log.created_at).toLocaleDateString()}</span>
-                        <span class="text-[10px] font-black text-blue-600 uppercase">PIC: ${log.pic_email?.split('@')[0] || 'Unknown'}</span>
+                <div class="log-entry bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">${log.log_type}</span>
+                            <p class="text-[9px] text-slate-500 font-bold uppercase">${new Date(log.created_at).toLocaleString()}</p>
+                        </div>
+                        <span class="text-[9px] bg-slate-700 text-slate-300 px-2 py-1 rounded-md font-mono">${log.branch || 'N/A'}</span>
                     </div>
-                    <p class="text-xs font-semibold text-slate-700">${log.notes || 'No notes'}</p>
-                    <div class="flex items-center gap-2">
-                        <span class="text-[9px] font-bold bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200 uppercase tracking-tighter italic">Follow up: ${log.follow_up_action || 'No'}</span>
+                    <p class="text-xs text-slate-200 font-medium leading-relaxed">${log.notes || 'No details provided.'}</p>
+                    <div class="mt-2 flex justify-between items-center">
+                         <span class="text-[9px] font-bold text-slate-500 italic">By: ${log.pic_email?.split('@')[0]}</span>
+                         ${log.follow_up_action && log.follow_up_action !== 'No' ? `<span class="text-[9px] font-black text-emerald-400 uppercase">📢 Follow-up Required</span>` : ''}
                     </div>
                 </div>`).join('');
             } else {
-                listDiv.innerHTML = '<p class="text-center py-4 text-xs font-bold text-slate-400 uppercase">No survey history found for this customer.</p>';
+                listDiv.innerHTML = '<p class="text-center py-4 text-xs font-bold text-slate-500 uppercase">No Activity Found.</p>';
             }
+            container.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function hideHistory() {
+            document.getElementById('history-container').classList.add('hidden');
         }
 
         function showMode(mode) {
