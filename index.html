@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MJM Customer Survey</title>
+
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="apple-touch-icon" href="logo.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MJM Survey">
+    <meta name="theme-color" content="#1b4332">
+    <link rel="manifest" href="manifest.json">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -79,7 +89,7 @@
             </div>
 
             <div id="verify-msg" class="hidden mb-6 p-4 bg-green-50 border border-green-200 rounded-2xl text-green-700 text-sm font-semibold animate-pulse">
-                📩 Please check your email inbox to verify your account before logging in.
+                📧 Please check your email inbox to verify your account before logging in.
             </div>
 
             <div class="space-y-4">
@@ -100,7 +110,12 @@
                 <input type="password" id="password" placeholder="Password" class="w-full p-4 input-style rounded-2xl outline-none font-semibold">
                 
                 <button id="main-auth-btn" class="w-full btn-primary text-white py-4 rounded-2xl font-bold uppercase tracking-widest shadow-lg">Login</button>
-                <button id="toggle-auth-btn" class="w-full text-slate-500 font-bold mt-4 text-[10px] uppercase tracking-widest hover:text-green-700">Create Staff Account</button>
+
+                <div id="forgot-password-container" class="text-center">
+                    <button id="forgot-password-btn" class="text-[10px] font-bold text-slate-400 hover:text-emerald-700 uppercase tracking-widest transition-colors">Forgot Password?</button>
+                </div>
+
+                <button id="toggle-auth-btn" class="w-full text-slate-500 font-bold mt-2 text-[10px] uppercase tracking-widest hover:text-green-700">Create Staff Account</button>
             </div>
         </div>
     </div>
@@ -108,25 +123,28 @@
     <div id="dashboard" class="hidden p-4 md:p-8">
         <div class="max-w-4xl mx-auto">
             <div class="flex justify-between items-center mb-10 glass-panel p-6 rounded-[2.5rem]">
-                <div class="flex items-center italic font-black text-xl mjm-dark-green">
-                    <span>MJM</span>
-                    <span class="ml-1 px-1.5 py-0.5 text-[8px] mjm-light-green-bg text-[#1b4332] not-italic rounded-sm">GROUP</span>
+                <div>
+                    <div class="flex items-center italic font-black text-xl mjm-dark-green">
+                        <span>MJM</span>
+                        <span class="ml-1 px-1.5 py-0.5 text-[8px] mjm-light-green-bg text-[#1b4332] not-italic rounded-sm">GROUP</span>
+                    </div>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Customer Survey</p>
                 </div>
                 <button id="logout-btn" class="text-[10px] font-bold text-slate-400 hover:text-red-500 uppercase tracking-widest bg-white px-5 py-2 rounded-full border border-slate-100 shadow-sm">Sign Out</button>
             </div>
             
             <div id="selection-menu" class="flex flex-col gap-5">
                 <a href="new-customer.html" class="glass-panel p-8 rounded-[2.5rem] border-l-[12px] border-green-600 hover:translate-x-1 transition-transform block">
-                    <span class="text-xl font-black text-slate-800 uppercase">👤 New Customer</span>
+                    <span class="text-xl font-black text-slate-800 uppercase">🌱 New Customer</span>
                 </a>
                 <a href="active-customer.html" class="glass-panel p-8 rounded-[2.5rem] border-l-[12px] border-blue-600 hover:translate-x-1 transition-transform block">
-                    <span class="text-xl font-black text-slate-800 uppercase">✅ Active Existing Customer</span>
+                    <span class="text-xl font-black text-slate-800 uppercase">🚛 Active Existing Customer</span>
                 </a>
                 <a href="inactive-customer.html" class="glass-panel p-8 rounded-[2.5rem] border-l-[12px] border-slate-700 hover:translate-x-1 transition-transform block">
-                    <span class="text-xl font-black text-slate-800 uppercase">🚫 Inactive Customer (No FFB supply in past 1 month)</span>
+                    <span class="text-xl font-black text-slate-800 uppercase">🛑 Inactive Customer (No FFB supply in past 1 month)</span>
                 </a>
                 <a href="follow-up.html" class="glass-panel p-8 rounded-[2.5rem] border-l-[12px] border-red-500 hover:translate-x-1 transition-transform block">
-                    <span class="text-xl font-black text-slate-800 uppercase">📞 Follow Up Cases</span>
+                    <span class="text-xl font-black text-slate-800 uppercase">🚩 Follow Up Cases</span>
                 </a>
                 <a href="report.html" class="glass-panel p-8 rounded-[2.5rem] border-l-[12px] border-amber-500 hover:translate-x-1 transition-transform block">
                     <span class="text-xl font-black text-slate-800 uppercase">📊 Survey Report</span>
@@ -143,29 +161,42 @@
         document.addEventListener('DOMContentLoaded', () => {
             const mainBtn = document.getElementById('main-auth-btn');
             const toggleBtn = document.getElementById('toggle-auth-btn');
+            const forgotBtn = document.getElementById('forgot-password-btn');
             const signupFields = document.getElementById('signup-fields');
             const authTitle = document.getElementById('auth-title');
             const verifyMsg = document.getElementById('verify-msg');
-
-            // Handle potential hash from email confirmation
-            if (window.location.hash && window.location.hash.includes('access_token')) {
-                // Supabase automatically handles the hash in onAuthStateChange
-                console.log("Detecting confirmation hash...");
-            }
+            const forgotContainer = document.getElementById('forgot-password-container');
 
             toggleBtn.addEventListener('click', () => {
                 const isCurrentlyLogin = (mainBtn.innerText === 'LOGIN');
-                verifyMsg.classList.add('hidden'); 
+                verifyMsg.classList.add('hidden');
                 if (isCurrentlyLogin) {
                     signupFields.classList.remove('hidden');
+                    forgotContainer.classList.add('hidden');
                     mainBtn.innerText = 'SIGN UP';
                     authTitle.innerText = 'Staff Registration';
                     toggleBtn.innerText = 'Back to Login';
                 } else {
                     signupFields.classList.add('hidden');
+                    forgotContainer.classList.remove('hidden');
                     mainBtn.innerText = 'LOGIN';
                     authTitle.innerText = 'Staff Login';
                     toggleBtn.innerText = 'Create Staff Account';
+                }
+            });
+
+            forgotBtn.addEventListener('click', async () => {
+                const email = document.getElementById('email').value;
+                if (!email) return alert("Please enter your email address first.");
+                
+                const { error } = await _supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin,
+                });
+
+                if (error) {
+                    alert("Error: " + error.message);
+                } else {
+                    alert("Password reset link sent! Please check your inbox.");
                 }
             });
 
@@ -179,16 +210,7 @@
 
                     if(!fullName || !branch) return alert("Please enter name and branch.");
 
-                    // FIX: Construct exact redirect URL for GitHub Pages
-                    const redirectUrl = window.location.origin + window.location.pathname;
-
-                    const { data, error } = await _supabase.auth.signUp({ 
-                        email, 
-                        password,
-                        options: {
-                            emailRedirectTo: redirectUrl
-                        }
-                    });
+                    const { data, error } = await _supabase.auth.signUp({ email, password });
                     
                     if (error) return alert(error.message);
 
@@ -211,10 +233,6 @@
                 if (session) {
                     document.getElementById('auth-section').classList.add('hidden');
                     document.getElementById('dashboard').classList.remove('hidden');
-                    // Clear the hash after successful login to clean up URL
-                    if (window.location.hash) {
-                        window.history.replaceState(null, null, window.location.pathname);
-                    }
                 } else {
                     document.getElementById('auth-section').classList.remove('hidden');
                     document.getElementById('dashboard').classList.add('hidden');
