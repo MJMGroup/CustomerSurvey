@@ -147,6 +147,12 @@
             const authTitle = document.getElementById('auth-title');
             const verifyMsg = document.getElementById('verify-msg');
 
+            // Handle potential hash from email confirmation
+            if (window.location.hash && window.location.hash.includes('access_token')) {
+                // Supabase automatically handles the hash in onAuthStateChange
+                console.log("Detecting confirmation hash...");
+            }
+
             toggleBtn.addEventListener('click', () => {
                 const isCurrentlyLogin = (mainBtn.innerText === 'LOGIN');
                 verifyMsg.classList.add('hidden'); 
@@ -173,12 +179,14 @@
 
                     if(!fullName || !branch) return alert("Please enter name and branch.");
 
-                    // Updated with emailRedirectTo to fix the 404 error
+                    // FIX: Construct exact redirect URL for GitHub Pages
+                    const redirectUrl = window.location.origin + window.location.pathname;
+
                     const { data, error } = await _supabase.auth.signUp({ 
                         email, 
                         password,
                         options: {
-                            emailRedirectTo: window.location.origin
+                            emailRedirectTo: redirectUrl
                         }
                     });
                     
@@ -203,6 +211,10 @@
                 if (session) {
                     document.getElementById('auth-section').classList.add('hidden');
                     document.getElementById('dashboard').classList.remove('hidden');
+                    // Clear the hash after successful login to clean up URL
+                    if (window.location.hash) {
+                        window.history.replaceState(null, null, window.location.pathname);
+                    }
                 } else {
                     document.getElementById('auth-section').classList.remove('hidden');
                     document.getElementById('dashboard').classList.add('hidden');
