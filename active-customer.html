@@ -15,7 +15,6 @@
         .star.active { color: #facc15; }
         .selected-card { border-color: #3b82f6 !important; background-color: #eff6ff !important; }
         .form-label { display: block; font-size: 0.75rem; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 0.25rem; }
-        /* Soil Checkbox Style */
         .soil-box { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; color: #1e293b; }
     </style>
 </head>
@@ -23,29 +22,27 @@
 
     <div class="max-w-4xl mx-auto">
         <div class="flex justify-between items-center mb-8 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h1 class="text-2xl font-black text-slate-700 uppercase italic tracking-tighter">🚛 Active Customer</h1>
+            <h1 class="text-2xl font-black text-slate-700 uppercase italic tracking-tighter">📈 Active Customer</h1>
             <a href="index.html" class="text-xs font-bold text-slate-400 hover:text-blue-600 uppercase tracking-widest bg-slate-50 px-3 py-2 rounded-lg shadow-sm border">Back to Menu</a>
         </div>
 
         <div class="bg-white p-6 md:p-8 rounded-3xl shadow-2xl border border-slate-200 mb-8">
             <div id="search-section" class="space-y-6">
                 <div class="flex gap-2">
-                    <input type="text" id="search_input" placeholder="Search Name, Location, or Contact..." class="flex-1 p-4 border-2 border-slate-100 rounded-2xl outline-none focus:border-blue-500">
+                    <input type="text" id="search_input" placeholder="Search Name, Location, or Contact..." class="flex-1 p-4 border-2 border-slate-100 rounded-2xl outline-none focus:border-slate-500">
                     <button type="button" onclick="performSearch()" class="bg-slate-700 text-white px-6 py-2 rounded-2xl font-black">Search</button>
                 </div>
                 <div id="search-results" class="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto pr-2 border-b pb-4"></div>
             </div>
 
             <div id="profile-area" class="hidden mt-6 space-y-6">
-                <div id="profile-display" class="bg-slate-50 p-6 rounded-3xl border-2 border-blue-100 space-y-4">
+                <div id="profile-display" class="bg-slate-50 p-6 rounded-3xl border-2 border-slate-100 space-y-4">
                     <h2 class="text-xl font-black text-slate-800 border-b pb-2" id="d_name"></h2>
-                    
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                        <div class="bg-white p-3 rounded-xl border"><p class="form-label">📍 Location</p><p id="d_loc" class="font-bold text-blue-600 truncate text-xs"></p></div>
+                        <div class="bg-white p-3 rounded-xl border"><p class="form-label">📍 Location</p><p id="d_loc" class="font-bold text-slate-600 truncate text-xs"></p></div>
                         <div class="bg-white p-3 rounded-xl border"><p class="form-label">📏 Area (Ha)</p><p id="d_size" class="font-bold"></p></div>
                         <div class="bg-white p-3 rounded-xl border"><p class="form-label">📊 Monthly Supply</p><p id="d_ton" class="font-bold text-emerald-600"></p></div>
                     </div>
-
                     <div class="flex gap-3 pt-2">
                         <button onclick="showMode('update')" class="flex-1 bg-slate-800 text-white py-3 rounded-xl text-xs font-bold uppercase">Update Profile</button>
                         <button onclick="showMode('add')" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl text-xs font-bold uppercase">Add New Estate</button>
@@ -54,11 +51,9 @@
 
                 <div id="editor-container" class="hidden bg-white p-6 rounded-3xl border-2 border-slate-200 space-y-6">
                     <h3 id="editor-title" class="text-lg font-black italic underline uppercase"></h3>
-                    
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="md:col-span-2"><label class="form-label">Customer / Company Name</label><input type="text" id="f_name" class="w-full p-3 border rounded-xl"></div>
                         <div class="md:col-span-2"><label class="form-label">Contact Number</label><input type="text" id="f_contact" class="w-full p-3 border rounded-xl"></div>
-                        
                         <div class="md:col-span-2 bg-slate-50 p-4 rounded-xl border">
                             <label class="form-label">Type of Soil</label>
                             <div class="flex gap-6 mt-2">
@@ -66,86 +61,60 @@
                                 <label class="soil-box"><input type="checkbox" id="soil_peat" class="w-5 h-5 accent-blue-600"> PEAT SOIL AREA</label>
                             </div>
                         </div>
-
                         <div><label class="form-label">Total Area (Ha)</label><input type="number" id="f_area" class="w-full p-3 border rounded-xl"></div>
-                        <div><label class="form-label">Estimated Monthly Supply Tonnage (mt)</label><input type="number" id="f_ton" class="w-full p-3 border rounded-xl"></div>
+                        <div><label class="form-label">Estimated Monthly Supply (mt)</label><input type="number" id="f_ton" class="w-full p-3 border rounded-xl"></div>
                         <div><label class="form-label">Estate Location</label><input type="text" id="f_loc" class="w-full p-3 border rounded-xl"></div>
-                        <div><label class="form-label">Google Location Link</label><input type="text" id="f_google" placeholder="https://maps.google.com/..." class="w-full p-3 border rounded-xl"></div>
+                        <div><label class="form-label">Google Location Link</label><input type="text" id="f_google" placeholder="http://..." class="w-full p-3 border rounded-xl"></div>
                     </div>
-
-                    <div class="space-y-3">
-                        <label class="form-label italic">Currently supply to?</label>
-                        <div class="grid grid-cols-2 gap-2"><input type="text" id="sup1_n" placeholder="Name of mill / collection center" class="p-3 border rounded-xl text-xs"><input type="number" id="sup1_p" placeholder="Offered Price (RM/mt)" class="p-3 border rounded-xl text-xs"></div>
-                        <div class="grid grid-cols-2 gap-2"><input type="text" id="sup2_n" placeholder="Name of mill / collection center" class="p-3 border rounded-xl text-xs"><input type="number" id="sup2_p" placeholder="Offered Price (RM/mt)" class="p-3 border rounded-xl text-xs"></div>
-                        <div class="grid grid-cols-2 gap-2"><input type="text" id="sup3_n" placeholder="Name of mill / collection center" class="p-3 border rounded-xl text-xs"><input type="number" id="sup3_p" placeholder="Offered Price (RM/mt)" class="p-3 border rounded-xl text-xs"></div>
-                    </div>
-
                     <div class="flex gap-2">
-                        <button id="save-btn" class="flex-1 bg-emerald-600 text-white py-4 rounded-2xl font-black uppercase shadow-lg">Save New Customer</button>
+                        <button id="save-btn" class="flex-1 bg-emerald-600 text-white py-4 rounded-xl font-bold uppercase shadow-lg">Save Profile</button>
                         <button onclick="hideEditor()" class="px-6 bg-slate-100 text-slate-500 rounded-xl font-bold uppercase text-xs">Cancel</button>
                     </div>
                 </div>
 
-                <button id="survey-trigger" onclick="showMode('survey')" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black uppercase shadow-lg">Proceed to Survey</button>
+                <button id="survey-trigger" onclick="showMode('survey')" class="w-full bg-slate-700 text-white py-4 rounded-xl font-black uppercase shadow-lg">Proceed to Active Survey</button>
 
-                <form id="ffb-form" class="hidden space-y-6 bg-white p-6 rounded-3xl border-2 border-blue-500 shadow-xl">
-                    <h3 class="font-black text-blue-700 italic uppercase">🚛 Active Existing Customer</h3>
-                    
+                <form id="ffb-form" class="hidden space-y-6 bg-white p-6 rounded-3xl border-2 border-slate-700 shadow-xl">
+                    <h3 class="font-black text-slate-700 italic uppercase underline">Service Satisfaction Survey</h3>
                     <div class="space-y-4">
                         <div class="p-4 bg-slate-50 rounded-2xl border">
-                            <label class="text-sm font-bold text-slate-700 uppercase tracking-tight">1. Customer satisfaction with overall service speed</label>
-                            <div class="star-rating" data-id="q-speed">
+                            <label class="form-label italic">1. Customer satisfaction with overall service speed</label>
+                            <div class="star-rating" data-target="q_speed">
                                 <span class="star" data-value="1">★</span><span class="star" data-value="2">★</span><span class="star" data-value="3">★</span><span class="star" data-value="4">★</span><span class="star" data-value="5">★</span>
                             </div>
                             <input type="hidden" id="q_speed" value="0">
                         </div>
-
                         <div class="p-4 bg-slate-50 rounded-2xl border">
-                            <label class="text-sm font-bold text-slate-700 uppercase tracking-tight">2. Customer satisfaction on ramp loader service</label>
-                            <div class="star-rating" data-id="q-loader">
+                            <label class="form-label italic">2. Customer satisfaction on ramp loader service</label>
+                            <div class="star-rating" data-target="q_loader">
                                 <span class="star" data-value="1">★</span><span class="star" data-value="2">★</span><span class="star" data-value="3">★</span><span class="star" data-value="4">★</span><span class="star" data-value="5">★</span>
                             </div>
                             <input type="hidden" id="q_loader" value="0">
                         </div>
-
                         <div class="p-4 bg-slate-50 rounded-2xl border">
-                            <label class="text-sm font-bold text-slate-700 uppercase tracking-tight">3. Customer satisfaction with weighbridge service</label>
-                            <div class="star-rating" data-id="q-wb">
+                            <label class="form-label italic">3. Customer satisfaction with weighbridge service</label>
+                            <div class="star-rating" data-target="q_wb">
                                 <span class="star" data-value="1">★</span><span class="star" data-value="2">★</span><span class="star" data-value="3">★</span><span class="star" data-value="4">★</span><span class="star" data-value="5">★</span>
                             </div>
                             <input type="hidden" id="q_wb" value="0">
                         </div>
-                    </div>
-
-                    <div class="space-y-3 p-4 bg-slate-50 rounded-2xl border">
-                        <label class="text-sm font-bold text-slate-700 uppercase">4. Currently supply ffb to other mill or collection center?</label>
-                        <div class="grid grid-cols-2 gap-3">
-                            <input type="text" id="fb1" placeholder="Name of mill / collection center" class="p-3 border rounded-xl text-sm">
-                            <input type="number" id="fp1" placeholder="Offered Price (RM/mt)" class="p-3 border rounded-xl text-sm">
+                        <div class="space-y-3">
+                            <label class="form-label italic">4. Other ramp offered price (RM/mt)</label>
+                            <div class="grid grid-cols-2 gap-2"><input type="text" id="fb1" placeholder="Name of ramp" class="p-3 border rounded-xl text-xs"><input type="number" id="fp1" placeholder="Price" class="p-3 border rounded-xl text-xs"></div>
+                            <div class="grid grid-cols-2 gap-2"><input type="text" id="fb2" placeholder="Name of ramp" class="p-3 border rounded-xl text-xs"><input type="number" id="fp2" placeholder="Price" class="p-3 border rounded-xl text-xs"></div>
+                        </div>
+                        <div class="p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-center justify-between">
+                            <label class="text-xs font-bold text-blue-900 uppercase pr-4 italic">5. Is customer followed our WhatsApp channel?</label>
+                            <input type="checkbox" id="whatsapp_follow" class="w-6 h-6 accent-blue-600">
+                        </div>
+                        <div><label class="form-label italic">6. What does the customer like about us?</label><textarea id="customer_likes" class="w-full p-3 border rounded-xl min-h-[80px] mt-2"></textarea></div>
+                        <div><label class="form-label italic">7. Any issues or concerns raised today?</label><textarea id="customer_issues" class="w-full p-3 border rounded-xl min-h-[80px] mt-2"></textarea></div>
+                        <div class="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-between">
+                            <label class="text-xs font-bold text-rose-900 uppercase pr-4 italic">Is there a serious issue requiring follow-up?</label>
+                            <input type="checkbox" id="follow_up" class="w-6 h-6 accent-rose-600">
                         </div>
                     </div>
-
-                    <div class="flex items-center gap-3 p-4 bg-blue-50 rounded-2xl border border-blue-200">
-                        <input type="checkbox" id="whatsapp_follow" class="w-6 h-6 accent-blue-600">
-                        <label for="whatsapp_follow" class="text-xs font-bold text-blue-900 uppercase">5. Is the customer following our WhatsApp channel?</label>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="form-label italic">6. What does the customer like about us?</label>
-                        <textarea id="customer_likes" class="w-full p-3 border rounded-xl text-sm h-20" placeholder="Type feedback here..."></textarea>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="form-label italic text-red-600">7. Any issues or concerns raised today?</label>
-                        <textarea id="customer_issues" class="w-full p-3 border rounded-xl text-sm h-20" placeholder="Type issues here..."></textarea>
-                    </div>
-
-                    <div class="flex items-center gap-3 p-4 bg-amber-50 rounded-2xl border border-amber-200">
-                        <input type="checkbox" id="follow_up" class="w-6 h-6 accent-amber-600">
-                        <label for="follow_up" class="text-sm font-bold text-amber-900 uppercase">Follow up Required</label>
-                    </div>
-
-                    <button type="submit" class="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold uppercase shadow-md hover:bg-emerald-700">Confirm & Save Survey</button>
+                    <button type="submit" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold uppercase shadow-xl">Submit Active Survey</button>
                 </form>
             </div>
         </div>
@@ -154,17 +123,35 @@
     <script>
         let currentData = null;
 
+        document.querySelectorAll('.star').forEach(star => {
+            star.onclick = function() {
+                const val = this.dataset.value;
+                const parent = this.parentElement;
+                const targetId = parent.dataset.target;
+                document.getElementById(targetId).value = val;
+                parent.querySelectorAll('.star').forEach(s => {
+                    s.classList.toggle('active', s.dataset.value <= val);
+                });
+            }
+        });
+
         async function performSearch() {
             const val = document.getElementById('search_input').value;
             if (val.length < 3) return;
-            const { data } = await _supabase.from('ffb_logs').select('*').or(`customer_name.ilike.%${val}%,location.ilike.%${val}%`).order('created_at', { ascending: false });
+            const { data } = await _supabase.from('ffb_logs').select('*').or(`customer_name.ilike.%${val}%,location.ilike.%${val}%,notes.ilike.%${val}%`).order('created_at', { ascending: false });
             const resDiv = document.getElementById('search-results');
             
             if (data?.length > 0) {
-                resDiv.innerHTML = data.map(rec => {
+                const seen = new Set();
+                const uniqueData = data.filter(item => {
+                    const name = item.customer_name.toLowerCase().trim();
+                    return seen.has(name) ? false : seen.add(name);
+                });
+
+                resDiv.innerHTML = uniqueData.map(rec => {
                     const estTon = rec.notes?.match(/Est Monthly:\s*([\d.]+)/)?.[1] || "0";
                     return `
-                    <div onclick='selectCustomer(${JSON.stringify(rec).replace(/'/g, "'")}, this)' class="customer-card cursor-pointer p-4 bg-white border rounded-2xl shadow-sm hover:border-blue-400">
+                    <div onclick='selectCustomer(${JSON.stringify(rec).replace(/'/g, "&apos;")}, this)' class="customer-card cursor-pointer p-4 bg-white border rounded-2xl shadow-sm hover:border-slate-400">
                         <div class="flex justify-between font-black text-slate-800"><span>${rec.customer_name}</span></div>
                         <div class="text-[10px] text-slate-500 font-semibold mt-1 uppercase">📍 ${rec.location.split(' (Link:')[0]}</div>
                         <div class="flex gap-4 mt-2">
@@ -174,11 +161,7 @@
                     </div>`;
                 }).join('');
             } else {
-                resDiv.innerHTML = `
-                    <div class="text-center py-6 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50">
-                        <p class="text-slate-400 font-bold mb-3 uppercase text-xs">No customer found with that name.</p>
-                        <button onclick="showMode('new')" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black uppercase text-xs shadow-lg">+ Create New Customer Profile</button>
-                    </div>`;
+                resDiv.innerHTML = `<p class="text-center text-slate-400 font-bold uppercase text-xs py-4">No results found.</p>`;
             }
         }
 
@@ -188,6 +171,8 @@
             el.classList.add('selected-card');
             document.getElementById('profile-area').classList.remove('hidden');
             document.getElementById('profile-display').classList.remove('hidden');
+            document.getElementById('editor-container').classList.add('hidden');
+            document.getElementById('ffb-form').classList.add('hidden');
             document.getElementById('d_name').innerText = data.customer_name;
             document.getElementById('d_loc').innerText = data.location.split(' (Link:')[0];
             document.getElementById('d_size').innerText = (data.area_size || 0) + " Ha";
@@ -198,31 +183,15 @@
             if(mode === 'survey') {
                 document.getElementById('ffb-form').classList.remove('hidden');
                 document.getElementById('editor-container').classList.add('hidden');
-                setupStars();
                 return;
             }
             const container = document.getElementById('editor-container');
             container.classList.remove('hidden');
             document.getElementById('ffb-form').classList.add('hidden');
-            
-            if(mode === 'new') {
-                document.getElementById('profile-area').classList.remove('hidden');
-                document.getElementById('profile-display').classList.add('hidden');
-                document.getElementById('editor-title').innerText = 'Save New Customer';
-                clearForm();
-                document.getElementById('save-btn').onclick = submitNewEstate;
-            } else {
-                document.getElementById('editor-title').innerText = mode === 'update' ? 'Update Profile' : 'Add New Estate';
-                document.getElementById('save-btn').onclick = mode === 'update' ? submitUpdate : submitNewEstate;
-                fillForm();
-            }
-        }
-
-        function clearForm() {
-            const fields = ['f_name', 'f_contact', 'f_loc', 'f_google', 'f_area', 'f_ton', 'sup1_n', 'sup1_p', 'sup2_n', 'sup2_p', 'sup3_n', 'sup3_p'];
-            fields.forEach(id => document.getElementById(id).value = '');
-            document.getElementById('soil_mineral').checked = false;
-            document.getElementById('soil_peat').checked = false;
+            document.getElementById('profile-display').classList.remove('hidden');
+            document.getElementById('editor-title').innerText = mode === 'update' ? 'Update Profile' : 'Add New Estate';
+            document.getElementById('save-btn').onclick = mode === 'update' ? submitUpdate : submitNewEstate;
+            fillForm();
         }
 
         function fillForm() {
@@ -234,65 +203,36 @@
             document.getElementById('f_ton').value = currentData.notes?.match(/Est Monthly:\s*([\d.]+)/)?.[1] || "";
         }
 
-        async function submitUpdate() {
-            const payload = {
+        function getPayload() {
+            const soil = [];
+            if(document.getElementById('soil_mineral')?.checked) soil.push('Mineral');
+            if(document.getElementById('soil_peat')?.checked) soil.push('Peat');
+            return {
                 customer_name: document.getElementById('f_name').value,
                 location: `${document.getElementById('f_loc').value} (Link: ${document.getElementById('f_google').value})`,
                 area_size: document.getElementById('f_area').value,
-                notes: `Contact: ${document.getElementById('f_contact').value}. Est Monthly: ${document.getElementById('f_ton').value}mt.`
+                notes: `Contact: ${document.getElementById('f_contact').value}. Soil: ${soil.join('/')}. Est Monthly: ${document.getElementById('f_ton').value}mt.`
             };
-            const { error } = await _supabase.from('ffb_logs').update(payload).eq('id', currentData.id);
+        }
+
+        async function submitUpdate() {
+            const { error } = await _supabase.from('ffb_logs').update(getPayload()).eq('id', currentData.id);
             if (!error) { alert("Profile Updated!"); location.reload(); }
         }
 
         async function submitNewEstate() {
             const user = await checkAuth();
-            
-            const soil = [];
-            if(document.getElementById('soil_mineral').checked) soil.push('Mineral');
-            if(document.getElementById('soil_peat').checked) soil.push('Peat');
-
-            const comps = [];
-            for(let i=1; i<=3; i++){
-                const n = document.getElementById(`sup${i}_n`).value;
-                const p = document.getElementById(`sup${i}_p`).value;
-                if(n) comps.push(`${n}(RM${p})`);
-            }
-
-            const payload = {
-                customer_name: document.getElementById('f_name').value,
-                location: `${document.getElementById('f_loc').value} (Link: ${document.getElementById('f_google').value})`,
-                area_size: document.getElementById('f_area').value,
-                log_type: 'New Profile Created',
-                notes: `Contact: ${document.getElementById('f_contact').value}. Soil: ${soil.join('/')}. Supply History: ${comps.join(', ')}. Est Monthly: ${document.getElementById('f_ton').value}mt.`,
-                branch: userBranch,
-                pic_email: user.email,
-                follow_up_action: 'No'
-            };
+            const payload = { ...getPayload(), log_type: 'New Profile Created', branch: userBranch, pic_email: user.email };
             const { error } = await _supabase.from('ffb_logs').insert([payload]);
-            if (!error) { alert("New Profile Saved!"); location.reload(); }
-        }
-
-        function setupStars() {
-            document.querySelectorAll('.star-rating').forEach(container => {
-                const qType = container.dataset.id;
-                let hiddenId = (qType === 'q-speed') ? 'q_speed' : (qType === 'q-loader' ? 'q_loader' : 'q_wb');
-                container.querySelectorAll('.star').forEach(star => {
-                    star.onclick = () => {
-                        const val = star.dataset.value;
-                        document.getElementById(hiddenId).value = val;
-                        container.querySelectorAll('.star').forEach(s => s.classList.toggle('active', s.dataset.value <= val));
-                    };
-                });
-            });
+            if (!error) { alert("Customer Profile Saved!"); location.reload(); }
         }
 
         document.getElementById('ffb-form').onsubmit = async (e) => {
             e.preventDefault();
             const user = await checkAuth();
             const comps = [];
-            for(let i=1; i<=3; i++) {
-                const n = document.getElementById('fb'+i)?.value;
+            for(let i=1; i<=2; i++) {
+                const n = document.getElementById('fb'+i).value;
                 const p = document.getElementById('fp'+i)?.value;
                 if(n) comps.push(`${n}(RM${p})`);
             }
