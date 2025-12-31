@@ -2,36 +2,62 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Monthly Report - MJM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f0f4f1; }
-        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); }
-        @media print { .no-print { display: none !important; } body { background: white; } }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f0f4f1;
+            overflow-x: hidden; /* Prevent horizontal scroll on mobile */
+        }
+
+        .glass-panel { 
+            background: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(12px); 
+            border: 1px solid rgba(255, 255, 255, 0.5); 
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        @media print { 
+            .no-print { display: none !important; } 
+            body { background: white; } 
+        }
+
         #details-modal { transition: opacity 0.3s ease; }
         .modal-content { transition: transform 0.3s ease-out; }
+
+        /* Smooth Table Scrolling for Mobile */
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Prevent button text from breaking */
+        button { white-space: nowrap; }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-3 md:p-8">
     <div class="max-w-6xl mx-auto">
-        <div class="no-print flex justify-between items-center mb-6 glass-panel p-6 rounded-[2.5rem]">
-            <div>
-                <h1 class="text-2xl font-black text-slate-800 uppercase italic">📊 Survey Report</h1>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Customer Survey Summary</p>
+        <div class="no-print flex flex-col md:flex-row justify-between items-center mb-6 glass-panel p-5 md:p-6 rounded-[2rem] md:rounded-[2.5rem] gap-4">
+            <div class="text-center md:text-left">
+                <h1 class="text-xl md:text-2xl font-black text-slate-800 uppercase italic">📊 Survey Report</h1>
+                <p class="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Customer Survey Summary</p>
             </div>
-            <div class="flex gap-2">
-                <input type="month" id="filter_month" class="p-2 border rounded-xl font-bold text-sm outline-none">
-                <button onclick="fetchData()" class="bg-slate-800 text-white px-6 py-2 rounded-xl font-bold text-sm">Generate</button>
-                <button onclick="window.print()" class="bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-sm">Print</button>
-                <a href="index.html" class="bg-white border px-4 py-2 rounded-xl font-bold text-sm">Back</a>
+            <div class="flex flex-wrap justify-center gap-2 w-full md:w-auto">
+                <input type="month" id="filter_month" class="flex-grow md:flex-grow-0 p-2 border rounded-xl font-bold text-xs md:text-sm outline-none bg-white">
+                <button onclick="fetchData()" class="bg-slate-800 text-white px-4 md:px-6 py-2 rounded-xl font-bold text-xs md:text-sm shadow-md">Generate</button>
+                <button onclick="window.print()" class="bg-emerald-600 text-white px-3 md:px-4 py-2 rounded-xl font-bold text-xs md:text-sm shadow-md">Print</button>
+                <a href="index.html" class="bg-white border px-3 md:px-4 py-2 rounded-xl font-bold text-xs md:text-sm shadow-sm">Back</a>
             </div>
         </div>
 
-        <div class="no-print grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 glass-panel p-6 rounded-3xl">
+        <div class="no-print grid grid-cols-1 md:grid-cols-3 gap-3 mb-6 glass-panel p-5 md:p-6 rounded-3xl">
             <div class="space-y-1">
                 <label class="text-[9px] font-black text-slate-400 uppercase ml-2">Branch</label>
                 <select id="search_branch" onchange="applyFilters()" class="w-full p-3 border rounded-xl text-xs font-bold bg-white outline-none">
@@ -55,70 +81,76 @@
             </div>
             <div class="space-y-1">
                 <label class="text-[9px] font-black text-slate-400 uppercase ml-2">Search Staff</label>
-                <input type="text" id="search_staff" onkeyup="applyFilters()" placeholder="Search staff name..." class="w-full p-3 border rounded-xl text-xs font-bold outline-none">
+                <input type="text" id="search_staff" onkeyup="applyFilters()" placeholder="Search staff name..." class="w-full p-3 border rounded-xl text-xs font-bold outline-none bg-white">
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div class="glass-panel p-6 rounded-3xl border-b-4 border-green-500 text-center">
-                <p class="text-[10px] font-black text-slate-400 uppercase">New Customer</p>
-                <p id="stat-new" class="text-3xl font-black text-slate-800">0</p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-8">
+            <div class="glass-panel p-5 md:p-6 rounded-3xl border-b-4 border-green-500 text-center shadow-sm">
+                <p class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-wider">New Customer</p>
+                <p id="stat-new" class="text-2xl md:text-3xl font-black text-slate-800">0</p>
             </div>
-            <div class="glass-panel p-6 rounded-3xl border-b-4 border-blue-500 text-center">
-                <p class="text-[10px] font-black text-slate-400 uppercase">Active Customer</p>
-                <p id="stat-active" class="text-3xl font-black text-slate-800">0</p>
+            <div class="glass-panel p-5 md:p-6 rounded-3xl border-b-4 border-blue-500 text-center shadow-sm">
+                <p class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-wider">Active Customer</p>
+                <p id="stat-active" class="text-2xl md:text-3xl font-black text-slate-800">0</p>
             </div>
-            <div class="glass-panel p-6 rounded-3xl border-b-4 border-slate-700 text-center">
-                <p class="text-[10px] font-black text-slate-400 uppercase">Inactive Customer</p>
-                <p id="stat-inactive" class="text-3xl font-black text-slate-800">0</p>
+            <div class="glass-panel p-5 md:p-6 rounded-3xl border-b-4 border-slate-700 text-center shadow-sm">
+                <p class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-wider">Inactive Customer</p>
+                <p id="stat-inactive" class="text-2xl md:text-3xl font-black text-slate-800">0</p>
             </div>
         </div>
 
-        <div class="glass-panel rounded-[2.5rem] overflow-hidden bg-white shadow-xl mb-8 border-2 border-slate-800">
-            <div class="bg-slate-800 p-4 text-white"><h2 class="text-xs font-black uppercase tracking-widest italic">👤 Staff Performance Summary</h2></div>
-            <table class="w-full text-left border-collapse">
-                <thead class="bg-slate-50">
-                    <tr>
-                        <th class="p-4 text-[10px] font-black text-slate-400 uppercase border-b">Branch</th>
-                        <th class="p-4 text-[10px] font-black text-slate-400 uppercase border-b">Staff</th>
-                        <th class="p-4 text-center text-[10px] font-black text-slate-400 uppercase border-b">New</th>
-                        <th class="p-4 text-center text-[10px] font-black text-slate-400 uppercase border-b">Active</th>
-                        <th class="p-4 text-center text-[10px] font-black text-slate-400 uppercase border-b">Inactive</th>
-                        <th class="p-4 text-center text-[10px] font-black text-slate-400 uppercase border-b">Total</th>
-                    </tr>
-                </thead>
-                <tbody id="summary-table" class="divide-y divide-slate-100"></tbody>
-            </table>
+        <div class="glass-panel rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-white shadow-xl mb-8 border-2 border-slate-800">
+            <div class="bg-slate-800 p-4 text-white"><h2 class="text-xs font-black uppercase tracking-widest italic text-center md:text-left">👤 Staff Performance Summary</h2></div>
+            <div class="table-container">
+                <table class="w-full text-left border-collapse min-w-[500px]">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="p-3 md:p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Branch</th>
+                            <th class="p-3 md:p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Staff</th>
+                            <th class="p-3 md:p-4 text-center text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">New</th>
+                            <th class="p-3 md:p-4 text-center text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Active</th>
+                            <th class="p-3 md:p-4 text-center text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Inactive</th>
+                            <th class="p-3 md:p-4 text-center text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summary-table" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
         </div>
 
-        <div class="glass-panel rounded-[2.5rem] overflow-hidden bg-white shadow-xl">
-            <div class="bg-slate-100 p-4"><h2 class="text-xs font-black uppercase tracking-widest text-slate-600 italic">📄 Detailed Customer Log</h2></div>
-            <table class="w-full text-left border-collapse">
-                <thead class="bg-slate-50">
-                    <tr>
-                        <th class="p-4 text-[10px] font-black text-slate-400 uppercase border-b">Date</th>
-                        <th class="p-4 text-[10px] font-black text-slate-400 uppercase border-b">Type</th>
-                        <th class="p-4 text-[10px] font-black text-slate-400 uppercase border-b">Customer Name</th>
-                        <th class="p-4 text-[10px] font-black text-slate-400 uppercase border-b text-center">Action</th>
-                    </tr>
-                </thead>
-                <tbody id="report-table" class="divide-y divide-slate-100"></tbody>
-            </table>
+        <div class="glass-panel rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-white shadow-xl mb-12">
+            <div class="bg-slate-100 p-4"><h2 class="text-xs font-black uppercase tracking-widest text-slate-600 italic text-center md:text-left">📄 Detailed Customer Log</h2></div>
+            <div class="table-container">
+                <table class="w-full text-left border-collapse min-w-[450px]">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="p-3 md:p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Date</th>
+                            <th class="p-3 md:p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Type</th>
+                            <th class="p-3 md:p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Customer Name</th>
+                            <th class="p-3 md:p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-table" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
-    <div id="details-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm opacity-0 no-print">
-        <div class="modal-content glass-panel w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-[2.5rem] shadow-2xl translate-y-8">
-            <div class="p-6 border-b flex justify-between items-center bg-slate-50">
-                <div>
-                    <h3 id="modal-title" class="text-lg font-black text-slate-800 uppercase italic">Full Survey Review</h3>
-                    <p id="modal-type" class="text-[10px] font-black text-blue-600 uppercase tracking-widest"></p>
+    <div id="details-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-slate-900/60 backdrop-blur-sm opacity-0 no-print">
+        <div class="modal-content glass-panel w-full max-w-2xl max-h-[92vh] overflow-hidden rounded-[2rem] md:rounded-[2.5rem] shadow-2xl translate-y-8 flex flex-col">
+            <div class="p-5 md:p-6 border-b flex justify-between items-center bg-slate-50">
+                <div class="pr-4">
+                    <h3 id="modal-title" class="text-md md:text-lg font-black text-slate-800 uppercase italic leading-tight">Full Survey Review</h3>
+                    <p id="modal-type" class="text-[9px] md:text-[10px] font-black text-blue-600 uppercase tracking-widest"></p>
                 </div>
-                <button onclick="closeModal()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white border shadow-sm text-slate-400 hover:text-red-500 font-bold">✕</button>
+                <button onclick="closeModal()" class="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-white border shadow-sm text-slate-400 hover:text-red-500 font-bold">✕</button>
             </div>
-            <div id="modal-body" class="p-8 overflow-y-auto max-h-[60vh] space-y-4 bg-white"></div>
-            <div class="p-6 bg-slate-50 border-t text-right">
-                <button onclick="closeModal()" class="px-8 py-3 bg-slate-800 text-white rounded-xl font-bold uppercase text-xs tracking-widest">Close View</button>
+            
+            <div id="modal-body" class="p-5 md:p-8 overflow-y-auto space-y-4 bg-white flex-grow"></div>
+            
+            <div class="p-5 bg-slate-50 border-t text-right">
+                <button onclick="closeModal()" class="w-full md:w-auto px-8 py-3 bg-slate-800 text-white rounded-xl font-bold uppercase text-[10px] md:text-xs tracking-widest shadow-lg">Close View</button>
             </div>
         </div>
     </div>
@@ -185,21 +217,21 @@
 
             summaryTable.innerHTML = Object.values(groups).map(g => `
                 <tr class="hover:bg-slate-50">
-                    <td class="p-4 text-[11px] font-bold text-slate-500 uppercase">${g.branch}</td>
-                    <td class="p-4 text-xs font-black text-slate-800">${g.pic}</td>
-                    <td class="p-4 text-center font-bold text-green-600">${g.n}</td>
-                    <td class="p-4 text-center font-bold text-blue-600">${g.a}</td>
-                    <td class="p-4 text-center font-bold text-slate-600">${g.i}</td>
-                    <td class="p-4 text-center font-black text-slate-900 bg-slate-50/50">${g.t}</td>
+                    <td class="p-3 md:p-4 text-[10px] md:text-[11px] font-bold text-slate-500 uppercase">${g.branch}</td>
+                    <td class="p-3 md:p-4 text-[11px] md:text-xs font-black text-slate-800">${g.pic}</td>
+                    <td class="p-3 md:p-4 text-center font-bold text-green-600">${g.n}</td>
+                    <td class="p-3 md:p-4 text-center font-bold text-blue-600">${g.a}</td>
+                    <td class="p-3 md:p-4 text-center font-bold text-slate-600">${g.i}</td>
+                    <td class="p-3 md:p-4 text-center font-black text-slate-900 bg-slate-50/50">${g.t}</td>
                 </tr>`).join('');
 
             const table = document.getElementById('report-table');
             table.innerHTML = data.map(i => `
                 <tr>
-                    <td class="p-4 font-mono text-[10px]">${new Date(i.created_at).toLocaleDateString('en-GB')}</td>
-                    <td class="p-4 text-[9px] font-black uppercase tracking-tighter">${getCleanType(i.log_type)}</td>
-                    <td class="p-4 font-bold text-slate-700">${i.customer_name}</td>
-                    <td class="p-4 text-center"><button onclick="showDetails(${i.id})" class="text-[10px] font-black uppercase text-blue-600 hover:underline">View Details →</button></td>
+                    <td class="p-3 md:p-4 font-mono text-[10px]">${new Date(i.created_at).toLocaleDateString('en-GB')}</td>
+                    <td class="p-3 md:p-4 text-[9px] font-black uppercase tracking-tighter leading-tight">${getCleanType(i.log_type)}</td>
+                    <td class="p-3 md:p-4 font-bold text-slate-700 text-xs">${i.customer_name}</td>
+                    <td class="p-3 md:p-4 text-center"><button onclick="showDetails(${i.id})" class="text-[10px] font-black uppercase text-blue-600 hover:underline">Details →</button></td>
                 </tr>`).join('');
         }
 
@@ -210,7 +242,6 @@
             document.getElementById('modal-title').innerText = item.customer_name;
             document.getElementById('modal-type').innerText = getCleanType(item.log_type);
             
-            // Fixed Labels: Maps the database keys to the exact required text
             const questionMap = {
                 "Speed": "1. CUSTOMER SATISFACTION WITH OVERALL SERVICE SPEED",
                 "Loader": "2. CUSTOMER SATISFACTION ON RAMP LOADER SERVICE",
@@ -225,15 +256,30 @@
                 "Competitors": "Other mill offered price"
             };
 
+            // Enhanced data extraction for Profile Card
+            let contact = "N/A";
+            let areaSize = "N/A";
+            
+            // Try to find in notes if direct columns are empty
+            const contactRegex = /(?:Contact|Phone|No):\s*([\d\s-+]+)/i;
+            const areaRegex = /(?:Area|Size|Estate Size):\s*([\d\s.,\w]+)/i;
+            
+            const contactMatch = item.notes?.match(contactRegex);
+            const areaMatch = item.notes?.match(areaRegex);
+
+            contact = item.contact_number || (contactMatch ? contactMatch[1] : "N/A");
+            areaSize = item.area_size || (areaMatch ? areaMatch[1] : "N/A");
+
             const noteParts = item.notes ? item.notes.split(' | ') : [];
             const formattedNotes = noteParts.map(p => {
                 const parts = p.split(':');
                 let key = parts[0] ? parts[0].trim().replace('Inactive Survey', '').replace('Active Survey', '').trim() : "";
                 let val = parts.slice(1).join(':').trim();
                 
-                if(!key && !val) return '';
+                // Don't show technical keys or duplicates in responses list
+                if(!key || !val || key.toLowerCase().includes('contact') || key.toLowerCase().includes('area')) return '';
+                
                 const fullQ = questionMap[key] || key;
-
                 let displayVal = "";
                 let bg = "bg-slate-50";
 
@@ -242,10 +288,8 @@
                 if (isStarField) {
                     const stars = parseInt(val) || 0;
                     displayVal = `<div class="text-amber-500 font-black text-lg">`;
-                    for(let i=0; i<5; i++) {
-                        displayVal += i < stars ? '⭐' : '☆';
-                    }
-                    displayVal += ` <span class="text-sm ml-2">${stars} out of 5 Stars</span></div>`;
+                    for(let i=0; i<5; i++) { displayVal += i < stars ? '⭐' : '☆'; }
+                    displayVal += ` <span class="text-xs ml-2 text-slate-500">${stars}/5</span></div>`;
                 } else if (val.toLowerCase() === 'true' || val.toLowerCase() === 'yes') {
                     displayVal = `<span class="text-emerald-600 font-black">✅ Yes</span>`;
                     bg = "bg-emerald-50/50 border-emerald-100";
@@ -254,58 +298,60 @@
                 } else if (!val || val.toLowerCase() === 'undefined' || val === "") {
                     displayVal = `<span class="text-slate-300 italic">No entry</span>`;
                 } else {
-                    displayVal = `<span class="text-slate-800 font-bold">${val}</span>`;
+                    displayVal = `<span class="text-slate-800 font-bold leading-relaxed">${val}</span>`;
                 }
 
                 return `<div class="p-4 ${bg} rounded-2xl border border-slate-100 shadow-sm">
-                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 italic">${fullQ}</p>
+                    <p class="text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 italic leading-tight">${fullQ}</p>
                     ${displayVal}
                 </div>`;
             }).join('');
 
-            const contact = item.notes?.match(/Contact: ([\d-]+)/)?.[1] || "N/A";
             const staff = item.pic_email ? item.pic_email.split('@')[0].toUpperCase() : 'N/A';
 
             document.getElementById('modal-body').innerHTML = `
                 <div class="mb-6 space-y-4">
-                    <h4 class="text-[11px] font-black text-slate-500 uppercase tracking-widest border-b pb-2 italic">👤 Customer Profile</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b pb-2 italic">👤 Customer Profile</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div class="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
                             <span class="block text-[8px] font-black text-slate-400 uppercase mb-1">Estate Location</span>
-                            <p class="font-bold text-slate-800 text-sm">${item.location || 'N/A'}</p>
+                            <p class="font-bold text-slate-800 text-xs md:text-sm">${item.location || 'N/A'}</p>
                         </div>
                         <div class="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
                             <span class="block text-[8px] font-black text-slate-400 uppercase mb-1">Contact Number</span>
-                            <p class="font-bold text-slate-800 text-sm">${contact}</p>
+                            <p class="font-bold text-slate-800 text-xs md:text-sm">${contact}</p>
                         </div>
                         <div class="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
                             <span class="block text-[8px] font-black text-slate-400 uppercase mb-1">Estate Size (Area)</span>
-                            <p class="font-bold text-slate-800 text-sm">${item.area_size || 'N/A'}</p>
+                            <p class="font-bold text-slate-800 text-xs md:text-sm">${areaSize}</p>
                         </div>
                         <div class="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
                             <span class="block text-[8px] font-black text-slate-400 uppercase mb-1">Est. Monthly Tonnage</span>
-                            <p class="font-bold text-slate-800 text-sm">${item.tonnage || '0'} mt</p>
+                            <p class="font-bold text-slate-800 text-xs md:text-sm">${item.tonnage || '0'} mt</p>
                         </div>
                         <div class="p-4 bg-blue-50 border border-blue-100 rounded-2xl shadow-sm">
                             <span class="block text-[8px] font-black text-blue-400 uppercase mb-1">Surveyor (Staff)</span>
-                            <p class="font-bold text-blue-900 text-sm">${staff}</p>
+                            <p class="font-bold text-blue-900 text-xs md:text-sm">${staff}</p>
                         </div>
                         <div class="p-4 bg-blue-50 border border-blue-100 rounded-2xl shadow-sm">
                             <span class="block text-[8px] font-black text-blue-400 uppercase mb-1">Branch</span>
-                            <p class="font-bold text-blue-900 text-sm">${item.branch || 'N/A'}</p>
+                            <p class="font-bold text-blue-900 text-xs md:text-sm truncate">${item.branch || 'N/A'}</p>
                         </div>
                     </div>
                 </div>
 
                 <div class="space-y-3">
-                    <h4 class="text-[11px] font-black text-slate-500 uppercase tracking-widest border-b pb-2 italic">📝 Survey Responses</h4>
+                    <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b pb-2 italic">📝 Survey Responses</h4>
                     ${formattedNotes || '<p class="text-center py-10 text-slate-300 italic">No survey data found.</p>'}
                 </div>
             `;
 
             const modal = document.getElementById('details-modal');
             modal.classList.remove('hidden');
-            setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('.modal-content').classList.remove('translate-y-8'); }, 10);
+            setTimeout(() => { 
+                modal.classList.remove('opacity-0'); 
+                modal.querySelector('.modal-content').classList.remove('translate-y-8'); 
+            }, 10);
         }
 
         function closeModal() {
@@ -315,7 +361,7 @@
             setTimeout(() => modal.classList.add('hidden'), 300);
         }
 
-        window.onload = async () => { await checkAuth(); fetchData(); };
+        window.onload = async () => { fetchData(); };
     </script>
 </body>
 </html>
