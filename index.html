@@ -120,6 +120,19 @@
         </div>
     </div>
 
+    <div id="reset-section" class="hidden flex items-center justify-center min-h-screen p-4">
+        <div class="glass-panel p-10 rounded-[3rem] w-full max-w-md text-center">
+            <div class="flex flex-col items-center mb-8">
+                <div class="italic font-black text-2xl mjm-dark-green mb-2">UPDATE PASSWORD</div>
+                <div class="h-1 w-8 bg-[#a7c957] rounded-full"></div>
+            </div>
+            <div class="space-y-4">
+                <input type="password" id="new-password" placeholder="Enter New Password" class="w-full p-4 input-style rounded-2xl outline-none font-semibold">
+                <button id="update-pass-btn" class="w-full btn-primary text-white py-4 rounded-2xl font-bold uppercase tracking-widest shadow-lg">Save New Password</button>
+            </div>
+        </div>
+    </div>
+
     <div id="dashboard" class="hidden p-4 md:p-8">
         <div class="max-w-4xl mx-auto">
             <div class="flex justify-between items-center mb-10 glass-panel p-6 rounded-[2.5rem]">
@@ -158,6 +171,8 @@
         const SUPABASE_KEY = 'sb_publishable_-51Tg7zfwk5PsBWw2dzulw_eyUM-Mzu';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        let isRecovering = false;
+
         document.addEventListener('DOMContentLoaded', () => {
             const mainBtn = document.getElementById('main-auth-btn');
             const toggleBtn = document.getElementById('toggle-auth-btn');
@@ -166,6 +181,7 @@
             const authTitle = document.getElementById('auth-title');
             const verifyMsg = document.getElementById('verify-msg');
             const forgotContainer = document.getElementById('forgot-password-container');
+            const updatePassBtn = document.getElementById('update-pass-btn');
 
             toggleBtn.addEventListener('click', () => {
                 const isCurrentlyLogin = (mainBtn.innerText === 'LOGIN');
@@ -190,13 +206,27 @@
                 if (!email) return alert("Please enter your email address first.");
                 
                 const { error } = await _supabase.auth.resetPasswordForEmail(email, {
-                    redirectTo: window.location.origin,
+                    redirectTo: 'https://mjmgroup.github.io/CustomerSurvey/',
                 });
 
                 if (error) {
                     alert("Error: " + error.message);
                 } else {
-                    alert("Password reset link sent! Please check your inbox.");
+                    alert("Password reset link sent! Please check your email.");
+                }
+            });
+
+            updatePassBtn.addEventListener('click', async () => {
+                const newPassword = document.getElementById('new-password').value;
+                if (!newPassword) return alert("Please enter a new password.");
+                
+                const { error } = await _supabase.auth.updateUser({ password: newPassword });
+                if (error) {
+                    alert("Error: " + error.message);
+                } else {
+                    alert("Password updated successfully! Redirecting to login...");
+                    await _supabase.auth.signOut();
+                    location.reload();
                 }
             });
 
@@ -230,12 +260,19 @@
             });
 
             _supabase.auth.onAuthStateChange((event, session) => {
-                if (session) {
+                if (event === 'PASSWORD_RECOVERY') {
+                    isRecovering = true;
+                    document.getElementById('auth-section').classList.add('hidden');
+                    document.getElementById('dashboard').classList.add('hidden');
+                    document.getElementById('reset-section').classList.remove('hidden');
+                } else if (session && !isRecovering) {
                     document.getElementById('auth-section').classList.add('hidden');
                     document.getElementById('dashboard').classList.remove('hidden');
-                } else {
+                    document.getElementById('reset-section').classList.add('hidden');
+                } else if (!session) {
                     document.getElementById('auth-section').classList.remove('hidden');
                     document.getElementById('dashboard').classList.add('hidden');
+                    document.getElementById('reset-section').classList.add('hidden');
                 }
             });
 
