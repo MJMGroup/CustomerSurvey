@@ -193,7 +193,6 @@
             renderList(data, val);
         }
 
-        /* AMENDED: renderList now includes the "Look In" button beside the name */
         function renderList(data, searchVal = "") {
             const resDiv = document.getElementById('search-results');
             if (data?.length > 0) {
@@ -235,7 +234,6 @@
             document.getElementById('editor-container').scrollIntoView({ behavior: 'smooth' });
         }
 
-        /* AMENDED: selectCustomer now assigns the profile Look In button to the modal */
         function selectCustomer(data, el) {
             currentData = data;
             document.querySelectorAll('.customer-card').forEach(c => c.classList.remove('selected-card'));
@@ -250,11 +248,9 @@
             document.getElementById('d_size').innerText = (data.area_size || 0) + " Ha";
             document.getElementById('d_ton').innerText = (data.notes?.match(/Est Monthly:\s*([\d.]+)/)?.[1] || 0) + " mt";
             
-            // Assign the profile display "Look In" button to open the modal
             document.getElementById('profile-look-in').onclick = () => viewHistoryModal(data.customer_name);
         }
 
-        /* TOP-UP: History Modal Logic (Matches Active Module style) */
         async function viewHistoryModal(customerName) {
             const modal = document.getElementById('history-modal');
             const list = document.getElementById('history-list-modal');
@@ -292,7 +288,6 @@
             document.getElementById('history-modal').style.display = 'none'; 
         }
 
-        /* ORIGINAL: Activity Log Logic (Kept as backup) */
         async function lookIn() {
             const container = document.getElementById('history-container');
             container.classList.remove('hidden');
@@ -429,6 +424,13 @@
 
         document.getElementById('ffb-form').onsubmit = async (e) => {
             e.preventDefault();
+            
+            // Validation: Ensure customer is selected
+            if (!currentData || !currentData.customer_name || currentData.customer_name === "") {
+                alert("Please select a customer from the list first before saving the survey.");
+                return;
+            }
+
             const user = await checkAuth();
             const comps = [];
             for(let i=1; i<=3; i++) {
