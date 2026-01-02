@@ -208,11 +208,13 @@
 
             <div id="view-profiles" class="hidden">
                 <div class="table-container">
-                    <table class="w-full text-left border-collapse min-w-[450px]">
+                    <table class="w-full text-left border-collapse min-w-[800px]">
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Customer Name</th>
-                                <th class="p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Main Branch</th>
+                                <th class="p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Estate Location</th>
+                                <th class="p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Estate Area Size (Ha)</th>
+                                <th class="p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Contact Number</th>
                                 <th class="p-4 text-center text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Total Surveys</th>
                                 <th class="p-4 text-center text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Latest Activity</th>
                                 <th class="p-4 text-center text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Profile</th>
@@ -443,22 +445,15 @@
                 const closeDate = isSolved ? (i.close_case_date || i.updated_at) : null;
                 const highlightClass = isSolved ? 'bg-emerald-50 hover:bg-emerald-100/50' : 'bg-rose-50 hover:bg-rose-100/50';
 
-                // --- MODIFIED SECTION STARTS HERE ---
-                // Determine what to show in the combined column based on solved status
-                let contentToShow = displayIssue; // Default to issue
+                let contentToShow = displayIssue; 
                 let contentClass = "text-slate-500";
 
                 if (isSolved) {
-                    // If it's solved, try to show the remark. If no specific remark extracted, fall back to "Resolved" or keep the issue but highlight it.
                     if (displayResolvedRemark !== "-" && displayResolvedRemark !== "Resolved") {
                          contentToShow = `<span class="font-bold">[Solution]</span> ${displayResolvedRemark}`;
-                    } else {
-                         // Optional: if solved but no specific remark, you could show just [Resolved] or keep the issue green.
-                         // Keeping the issue green for now if no specific remark found.
                     }
                     contentClass = "text-emerald-700";
                 }
-                // --- MODIFIED SECTION ENDS HERE ---
 
                 return `
                 <tr class="${highlightClass}">
@@ -474,6 +469,7 @@
             renderCustomerProfiles(unfilteredSystemData);
         }
 
+        // --- UPDATED CUSTOMER PROFILE LOGIC (SPECIFIC REQUEST) ---
         function renderCustomerProfiles(data) {
             const profilesTable = document.getElementById('profiles-table');
             const custMap = {};
@@ -483,31 +479,45 @@
                 if(!custMap[name]) {
                     custMap[name] = {
                         name: name,
-                        branch: i.branch || 'N/A',
                         count: 0,
-                        latest: i.created_at
+                        latest: i.created_at,
+                        notes: i.notes || ''
                     };
                 }
                 custMap[name].count++;
-                if(new Date(i.created_at) > new Date(custMap[name].latest)) {
+                if(new Date(i.created_at) >= new Date(custMap[name].latest)) {
                     custMap[name].latest = i.created_at;
+                    custMap[name].notes = i.notes || '';
                 }
             });
 
+            const extractFromNotes = (notes, label) => {
+                if (!notes) return "-";
+                // Handles varied formats: "Label: Value" or "Label : Value"
+                const regex = new RegExp(`${label}\\s*:\\s*([^|]+)`, "i");
+                const match = notes.match(regex);
+                return match ? match[1].trim() : "-";
+            };
+
             const profiles = Object.values(custMap).sort((a,b) => b.count - a.count);
             profilesTable.innerHTML = profiles.map(p => `
-                <tr class="hover:bg-slate-50">
-                    <td class="p-4 font-black text-slate-800 text-xs">${p.name}</td>
-                    <td class="p-4 font-bold text-slate-500 text-[10px] uppercase tracking-wider">${p.branch}</td>
-                    <td class="p-4 text-center font-black text-blue-600 text-xs">${p.count}</td>
-                    <td class="p-4 text-center font-mono text-[10px] text-slate-400">${new Date(p.latest).toLocaleDateString('en-GB')}</td>
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="p-4 font-black text-slate-800 text-xs uppercase">${p.name}</td>
+                    <td class="p-4 font-bold text-slate-600 text-[10px] uppercase">${extractFromNotes(p.notes, "Estate Location")}</td>
+                    <td class="p-4 font-black text-slate-500 text-[10px] uppercase italic">${extractFromNotes(p.notes, "Estate Area Size \\(Ha\\)")}</td>
+                    <td class="p-4 font-black text-blue-600 text-[10px] uppercase tracking-tighter">${extractFromNotes(p.notes, "Contact Number")}</td>
+                    <td class="p-4 text-center font-black text-slate-800 text-xs">${p.count}</td>
+                    <td class="p-4 text-center font-bold text-slate-400 text-[10px]">${new Date(p.latest).toLocaleDateString('en-GB')}</td>
                     <td class="p-4 text-center no-print">
-                        <button onclick="showCustomerProfile('${p.name.replace(/'/g, "\\'")}')" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase hover:bg-black transition-all">Look More</button>
+                        <button onclick="showCustomerProfile('${p.name.replace(/'/g, "\\'")}')" 
+                                class="bg-slate-800 text-white px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tighter hover:bg-black transition-all">
+                            Look More
+                        </button>
                     </td>
                 </tr>
             `).join('');
 
-            if(profiles.length === 0) profilesTable.innerHTML = `<tr><td colspan="5" class="p-10 text-center text-slate-400 font-bold text-xs">No customer data found</td></tr>`;
+            if(profiles.length === 0) profilesTable.innerHTML = `<tr><td colspan="7" class="p-10 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">No customer data found</td></tr>`;
         }
 
         function showCustomerProfile(customerName) {
@@ -679,14 +689,12 @@
                             let issueRaised = "N/A";
                             let resolvedRemark = "-";
 
-                            // Extract Issue Raised
                             if(i.notes) {
                                 const notesList = i.notes.split(' | ');
                                 const issuePart = notesList.find(n => n.includes('Issues:') || n.includes('Reason:'));
                                 issueRaised = issuePart ? issuePart.split(':')[1].trim() : "Pending";
                             }
                             
-                            // Extract Resolved Remark
                             if(isSolved && i.notes && (i.notes.includes('[CLOSED:') || i.notes.includes('[Resolved:'))) {
                                 const match = i.notes.match(/\[(CLOSED|Resolved): (.*?)\]/);
                                 resolvedRemark = match ? match[2] : "Resolved";
