@@ -345,41 +345,98 @@
             const soil = [];
             if(document.getElementById('soil_mineral').checked) soil.push('Mineral');
             if(document.getElementById('soil_peat').checked) soil.push('Peat');
-            const soilType = soil.join('/') || "Not Specified";
             
+            if (soil.length === 0) {
+                alert("Please select at least one Type of Soil.");
+                return null;
+            }
+            const soilType = soil.join('/');
+            
+            let googleLink = document.getElementById('f_google').value.trim();
+            if (googleLink && !googleLink.startsWith('http')) {
+                googleLink = 'https://' + googleLink;
+            }
+
             const mjmCenters = [];
             document.querySelectorAll('input[name="mjm_center"]:checked').forEach(cb => mjmCenters.push(cb.value));
 
             const supplyComps = [];
             for(let i=1; i<=3; i++) {
-                const n = document.getElementById('s_name'+i).value;
-                const p = document.getElementById('s_price'+i).value;
+                const n = document.getElementById('s_name'+i).value.trim();
+                const p = document.getElementById('s_price'+i).value.trim();
                 if(n) supplyComps.push(`${n}(RM${p})`);
             }
 
-            const tonnage = document.getElementById('f_ton').value;
+            const tonnage = document.getElementById('f_ton').value || "0";
+            const contact = document.getElementById('f_contact').value.trim() || "N/A";
+
             return {
-                customer_name: document.getElementById('f_name').value,
-                location: `${document.getElementById('f_loc').value} (Link: ${document.getElementById('f_google').value})`,
-                area_size: document.getElementById('f_area').value,
-                notes: `Contact: ${document.getElementById('f_contact').value}. Soil: ${soilType}. Est Monthly: ${tonnage}mt. MJMSentTo: ${mjmCenters.join(',')}. CurrentSupplies: ${supplyComps.join(',')}.`
+                customer_name: document.getElementById('f_name').value.trim(),
+                location: `${document.getElementById('f_loc').value.trim()} (Link: ${googleLink})`,
+                area_size: document.getElementById('f_area').value || 0,
+                notes: `Contact: ${contact}. Soil: ${soilType}. Est Monthly: ${tonnage}mt. MJMSentTo: ${mjmCenters.join(',') || 'None'}. CurrentSupplies: ${supplyComps.join(',') || 'None'}.`
             };
         }
 
         async function submitUpdate() {
-            const { error } = await _supabase.from('ffb_logs').update(getPayload()).eq('id', currentData.id);
-            if (!error) { alert("Profile Updated!"); location.reload(); }
+            const payload = getPayload();
+            if (!payload) return;
+
+            const btn = document.getElementById('save-btn');
+            const originalText = btn.innerText;
+            btn.innerText = "UPDATING...";
+            btn.disabled = true;
+
+            const { error } = await _supabase.from('ffb_logs').update(payload).eq('id', currentData.id);
+            
+            if (error) {
+                alert("Error updating profile: " + error.message);
+                btn.innerText = originalText;
+                btn.disabled = false;
+            } else {
+                alert("Profile Updated Successfully!");
+                location.reload();
+            }
         }
 
         async function submitNewEstate() {
+            const payload = getPayload();
+            if (!payload) return;
+
             const user = await checkAuth();
-            const payload = { ...getPayload(), log_type: 'New Customer Profile', branch: userBranch, pic_email: user.email };
-            const { error } = await _supabase.from('ffb_logs').insert([payload]);
-            if (!error) { alert("Profile Created Successfully!"); location.reload(); }
+            const btn = document.getElementById('save-btn');
+            const originalText = btn.innerText;
+            btn.innerText = "CREATING...";
+            btn.disabled = true;
+
+            const finalPayload = { 
+                ...payload, 
+                log_type: 'New Customer Profile', 
+                branch: userBranch, 
+                pic_email: user.email 
+            };
+
+            const { error } = await _supabase.from('ffb_logs').insert([finalPayload]);
+            
+            if (error) {
+                alert("Error creating profile: " + error.message);
+                btn.innerText = originalText;
+                btn.disabled = false;
+            } else {
+                alert("New Profile Created Successfully!");
+                location.reload();
+            }
         }
 
         document.getElementById('ffb-form').onsubmit = async (e) => {
             e.preventDefault();
+
+            // FIXED: Validation to prevent saving without a selected customer
+            if (!currentData || !currentData.id) {
+                alert("Please select a customer from the search list first.");
+                return;
+            }
+
             const user = await checkAuth();
             const comps = [];
             for(let i=1; i<=2; i++) {
@@ -406,8 +463,20 @@
                 branch: userBranch, 
                 pic_email: user.email 
             };
+            
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.innerText = "SAVING...";
+            submitBtn.disabled = true;
+
             const { error } = await _supabase.from('ffb_logs').insert([payload]);
-            if (!error) { alert("Survey Saved!"); location.reload(); }
+            if (!error) { 
+                alert("Survey Saved!"); 
+                location.reload(); 
+            } else {
+                alert("Error saving survey: " + error.message);
+                submitBtn.innerText = "Submit Survey Form";
+                submitBtn.disabled = false;
+            }
         };
 
         function hideEditor() { document.getElementById('editor-container').classList.add('hidden'); }
