@@ -3,850 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Advanced Report - MJM</title>
+    <title>Report Dashboard - MJM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #f0f4f1;
-            overflow-x: hidden;
-        }
-
-        .glass-panel { 
-            background: rgba(255, 255, 255, 0.95); 
-            backdrop-filter: blur(12px); 
-            border: 1px solid rgba(255, 255, 255, 0.5); 
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        @media print { 
-            .no-print { display: none !important; } 
-            body { background: white; padding: 0; }
-            .glass-panel { border: none; box-shadow: none; backdrop-filter: none; }
-        }
-
-        #details-modal, #profile-modal { transition: opacity 0.3s ease; }
-        .modal-content { transition: transform 0.3s ease-out; }
-
-        .table-container {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        button { white-space: nowrap; }
-
-        .tab-active {
-            border-bottom: 3px solid #1e293b;
-            color: #1e293b;
-            font-weight: 900;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #f0f4f1; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); }
+        .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .nav-card { transition: all 0.3s ease; border: 2px solid transparent; }
+        .nav-card:hover { transform: translateY(-5px); border-color: #1e293b; background: white; }
     </style>
 </head>
 <body class="p-3 md:p-8">
     <div class="max-w-6xl mx-auto">
-        <div class="no-print flex flex-col md:flex-row justify-between items-center mb-6 glass-panel p-5 md:p-6 rounded-[2rem] md:rounded-[2.5rem] gap-4">
+        
+        <div class="no-print flex flex-col md:flex-row justify-between items-center mb-6 glass-panel p-5 md:p-6 rounded-[2.5rem] gap-4">
             <div class="text-center md:text-left">
-                <h1 class="text-xl md:text-2xl font-black text-slate-800 uppercase italic">📊 Survey Report</h1>
-                <p class="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Custom Date Range Analysis</p>
+                <h1 class="text-xl md:text-2xl font-black text-slate-800 uppercase italic">📊 Summary Dashboard</h1>
+                <p class="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Branch Performance Overview</p>
             </div>
             
-            <div class="flex flex-wrap justify-center items-center gap-2 w-full md:w-auto">
+            <div class="flex flex-wrap justify-center items-center gap-2">
                 <div class="flex items-center gap-2 bg-white p-2 rounded-xl border shadow-sm">
-                    <div class="flex flex-col">
-                        <label class="text-[8px] font-black text-slate-400 uppercase px-1">From</label>
-                        <input type="date" id="filter_start" class="p-1 bg-transparent font-bold text-xs outline-none">
-                    </div>
-                    <div class="h-6 w-[1px] bg-slate-200"></div>
-                    <div class="flex flex-col">
-                        <label class="text-[8px] font-black text-slate-400 uppercase px-1">To</label>
-                        <input type="date" id="filter_end" class="p-1 bg-transparent font-bold text-xs outline-none">
-                    </div>
+                    <input type="date" id="filter_start" class="p-1 bg-transparent font-bold text-xs outline-none">
+                    <span class="text-slate-300">→</span>
+                    <input type="date" id="filter_end" class="p-1 bg-transparent font-bold text-xs outline-none">
                 </div>
-
-                <button id="btn-generate" onclick="fetchData()" class="bg-slate-800 text-white px-6 py-3 rounded-xl font-bold text-xs md:text-sm shadow-md hover:bg-black transition-all">Generate</button>
-                <a href="index.html" class="bg-white border px-3 md:px-4 py-3 rounded-xl font-bold text-xs md:text-sm shadow-sm">Back</a>
+                <button onclick="fetchDashboardData()" class="bg-slate-800 text-white px-6 py-3 rounded-xl font-bold text-xs shadow-md hover:bg-black transition-all uppercase tracking-widest">Apply Filter</button>
+                <a href="index.html" class="bg-white border px-4 py-3 rounded-xl font-bold text-xs shadow-sm hover:bg-slate-50 transition-all uppercase tracking-widest">Back to Menu</a>
             </div>
         </div>
 
-        <div class="no-print grid grid-cols-1 md:grid-cols-3 gap-3 mb-6 glass-panel p-5 md:p-6 rounded-3xl">
-            <div class="space-y-1">
-                <label class="text-[9px] font-black text-slate-400 uppercase ml-2">Branch</label>
-                <select id="search_branch" onchange="applyFilters()" class="w-full p-3 border rounded-xl text-xs font-bold bg-white outline-none">
-                    <option value="">All Branches</option>
-                    <option>Bekenu Collection Centre</option>
-                    <option>Beraya Collection Centre</option>
-                    <option>Kejapil Collection Centre</option>
-                    <option>Pelapi Collection Centre</option>
-                    <option>Tegageng Collection Centre</option>
-                    <option>MJM(POM) Collection Centre</option>
-                </select>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            <div class="glass-panel p-6 rounded-3xl border-b-4 border-green-500 text-center">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Total New Records</p>
+                <p id="stat-new" class="text-3xl font-black text-slate-800">0</p>
             </div>
-            <div class="space-y-1">
-                <label class="text-[9px] font-black text-slate-400 uppercase ml-2">Survey Type</label>
-                <select id="search_type" onchange="applyFilters()" class="w-full p-3 border rounded-xl text-xs font-bold bg-white outline-none">
-                    <option value="">All Types</option>
-                    <option value="New">New Customer Record</option>
-                    <option value="Active">Active Customer Record</option>
-                    <option value="Inactive">Inactive Customer Record</option>
-                </select>
+            <div class="glass-panel p-6 rounded-3xl border-b-4 border-blue-500 text-center">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Total Active Surveys</p>
+                <p id="stat-active" class="text-3xl font-black text-slate-800">0</p>
             </div>
-            <div class="space-y-1">
-                <label class="text-[9px] font-black text-slate-400 uppercase ml-2">Search Staff</label>
-                <input type="text" id="search_staff" onkeyup="applyFilters()" placeholder="Search staff name..." class="w-full p-3 border rounded-xl text-xs font-bold outline-none bg-white">
+            <div class="glass-panel p-6 rounded-3xl border-b-4 border-slate-700 text-center">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Total Inactive</p>
+                <p id="stat-inactive" class="text-3xl font-black text-slate-800">0</p>
             </div>
         </div>
 
-        <div class="no-print grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-8">
-            <div class="glass-panel p-5 md:p-6 rounded-3xl border-b-4 border-green-500 text-center shadow-sm">
-                <p class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-wider">New Customer</p>
-                <p id="stat-new" class="text-2xl md:text-3xl font-black text-slate-800">0</p>
+        <div class="glass-panel rounded-[2.5rem] overflow-hidden bg-white shadow-xl border-2 border-slate-800 mb-10">
+            <div class="bg-slate-800 p-4 text-white">
+                <h2 class="text-xs font-black uppercase tracking-widest italic">👤 Branch & Staff Performance</h2>
             </div>
-            <div class="glass-panel p-5 md:p-6 rounded-3xl border-b-4 border-blue-500 text-center shadow-sm">
-                <p class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-wider">Active Customer</p>
-                <p id="stat-active" class="text-2xl md:text-3xl font-black text-slate-800">0</p>
-            </div>
-            <div class="glass-panel p-5 md:p-6 rounded-3xl border-b-4 border-slate-700 text-center shadow-sm">
-                <p class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-wider">Inactive Customer</p>
-                <p id="stat-inactive" class="text-2xl md:text-3xl font-black text-slate-800">0</p>
-            </div>
-        </div>
-
-        <div class="no-print glass-panel rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-white shadow-xl mb-8 border-2 border-slate-800">
-            <div class="bg-slate-800 p-4 text-white"><h2 class="text-xs font-black uppercase tracking-widest italic text-center md:text-left">👤 Staff Performance Summary</h2></div>
             <div class="table-container">
-                <table class="w-full text-left border-collapse min-w-[500px]">
+                <table class="w-full text-left border-collapse">
                     <thead class="bg-slate-50">
                         <tr>
-                            <th class="p-3 md:p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Branch</th>
-                            <th class="p-3 md:p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Staff</th>
-                            <th class="p-3 md:p-4 text-center text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">New</th>
-                            <th class="p-3 md:p-4 text-center text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Active</th>
-                            <th class="p-3 md:p-4 text-center text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Inactive</th>
-                            <th class="p-3 md:p-4 text-center text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Total</th>
+                            <th class="p-4 text-[10px] font-black text-slate-400 uppercase border-b">Branch</th>
+                            <th class="p-4 text-[10px] font-black text-slate-400 uppercase border-b">Staff</th>
+                            <th class="p-4 text-center text-[10px] font-black text-slate-400 uppercase border-b">New</th>
+                            <th class="p-4 text-center text-[10px] font-black text-slate-400 uppercase border-b">Active</th>
+                            <th class="p-4 text-center text-[10px] font-black text-slate-400 uppercase border-b">Inactive</th>
+                            <th class="p-4 text-center text-[10px] font-black text-slate-400 uppercase border-b bg-slate-100">Total</th>
                         </tr>
                     </thead>
-                    <tbody id="summary-table" class="divide-y divide-slate-100"></tbody>
+                    <tbody id="summary-table" class="divide-y divide-slate-100 text-xs font-bold text-slate-700">
+                        <tr><td colspan="6" class="p-10 text-center text-slate-300 uppercase font-black">Loading Data...</td></tr>
+                    </tbody>
                 </table>
             </div>
         </div>
 
-        <div class="no-print mb-8 p-6 glass-panel rounded-[2rem] border-2 border-emerald-500/30">
-            <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest italic mb-4">Export & Generate Reports ↓</p>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <button onclick="generateDetailedLogReport()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg flex flex-col items-center gap-1 transition-all">
-                    <span class="text-lg">📄</span>
-                    <span>Detailed Customer Log</span>
-                    <span class="text-[8px] opacity-70 font-normal">Print PDF or Export Excel</span>
-                </button>
-                <button onclick="generateCaseReport()" class="bg-slate-800 hover:bg-black text-white px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg flex flex-col items-center gap-1 transition-all">
-                    <span class="text-lg">✅</span>
-                    <span>Opened & Closed Cases Report</span>
-                    <span class="text-[8px] opacity-70 font-normal">Print PDF or Export Excel</span>
-                </button>
-                <button onclick="generateCustomerProfileReport()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg flex flex-col items-center gap-1 transition-all">
-                    <span class="text-lg">👥</span>
-                    <span>All Customer Profile</span>
-                    <span class="text-[8px] opacity-70 font-normal">Print PDF or Export Excel</span>
-                </button>
-            </div>
-        </div>
-
-        <div class="no-print glass-panel rounded-[2rem] md:rounded-[2.5rem] overflow-hidden bg-white shadow-xl mb-12 border border-slate-200">
-            <div class="bg-slate-100 flex items-center px-6 border-b">
-                <button onclick="switchTab('all')" id="tab-all" class="py-4 px-6 text-[10px] uppercase tracking-widest tab-active">📄 All Surveys</button>
-                <button onclick="switchTab('solved')" id="tab-solved" class="py-4 px-6 text-[10px] uppercase tracking-widest text-slate-400 font-bold">✅ Case Opened & Closed</button>
-                <button onclick="switchTab('profiles')" id="tab-profiles" class="py-4 px-6 text-[10px] uppercase tracking-widest text-slate-400 font-bold">👥 Customer Profiles</button>
-            </div>
-
-            <div id="view-all" class="table-container">
-                <table class="w-full text-left border-collapse min-w-[450px]">
-                    <thead class="bg-slate-50">
-                        <tr>
-                            <th class="p-3 md:p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Date</th>
-                            <th class="p-3 md:p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Type</th>
-                            <th class="p-3 md:p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Customer Name</th>
-                            <th class="p-3 md:p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b text-center">Follow Up?</th>
-                            <th class="p-3 md:p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b no-print text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="report-table" class="divide-y divide-slate-100"></tbody>
-                </table>
-            </div>
-
-            <div id="view-solved" class="hidden">
-                <div class="grid grid-cols-2 border-b bg-slate-50/50">
-                    <div class="p-4 border-r text-center">
-                        <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Case Created (In Period)</p>
-                        <p id="solved-stat-created" class="text-lg font-black text-slate-700">0</p>
-                    </div>
-                    <div class="p-4 text-center">
-                        <p class="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Case Solved (In Period)</p>
-                        <p id="solved-stat-closed" class="text-lg font-black text-emerald-600">0</p>
-                    </div>
-                </div>
+        <div class="mb-20">
+            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 px-6">Detailed Reports & Logs</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 
-                <div class="table-container">
-                    <table class="w-full text-left border-collapse min-w-[600px]">
-                        <thead class="bg-slate-50 text-emerald-700">
-                            <tr>
-                                <th class="p-4 text-[9px] md:text-[10px] font-black uppercase border-b">Date Opened</th>
-                                <th class="p-4 text-[9px] md:text-[10px] font-black uppercase border-b">Date Solved</th>
-                                <th class="p-4 text-[9px] md:text-[10px] font-black uppercase border-b">Customer</th>
-                                <th class="p-4 text-[9px] md:text-[10px] font-black uppercase border-b">Raised issue / solved case remark</th>
-                                <th class="p-4 text-[9px] md:text-[10px] font-black uppercase border-b text-center">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="solved-table" class="divide-y divide-slate-100"></tbody>
-                    </table>
-                </div>
-            </div>
+                <a href="report-surveys.html" class="nav-card glass-panel p-8 rounded-[2.5rem] flex flex-col gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-slate-800 text-white flex items-center justify-center text-xl shadow-lg">📝</div>
+                    <div>
+                        <p class="text-lg font-black text-slate-800 uppercase italic">All Surveys</p>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Full Individual Question Logs</p>
+                    </div>
+                </a>
 
-            <div id="view-profiles" class="hidden">
-                <div class="table-container">
-                    <table class="w-full text-left border-collapse min-w-[800px]">
-                        <thead class="bg-slate-50">
-                            <tr>
-                                <th class="p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Customer Name</th>
-                                <th class="p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Estate Location</th>
-                                <th class="p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Estate Area Size (Ha)</th>
-                                <th class="p-4 text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Contact Number</th>
-                                <th class="p-4 text-center text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Total Surveys</th>
-                                <th class="p-4 text-center text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Latest Activity</th>
-                                <th class="p-4 text-center text-[9px] md:text-[10px] font-black text-slate-400 uppercase border-b">Profile</th>
-                            </tr>
-                        </thead>
-                        <tbody id="profiles-table" class="divide-y divide-slate-100"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+                <a href="report-cases.html" class="nav-card glass-panel p-8 rounded-[2.5rem] flex flex-col gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-xl shadow-lg">🚩</div>
+                    <div>
+                        <p class="text-lg font-black text-slate-800 uppercase italic">Cases Log</p>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Opened & Closed Follow-ups</p>
+                    </div>
+                </a>
 
-    <div id="details-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-3 md:p-4 bg-slate-900/60 backdrop-blur-sm opacity-0 no-print">
-        <div class="modal-content glass-panel w-full max-w-2xl max-h-[92vh] overflow-hidden rounded-[2rem] md:rounded-[2.5rem] shadow-2xl translate-y-8 flex flex-col">
-            <div class="p-5 md:p-6 border-b flex justify-between items-center bg-slate-50">
-                <div class="pr-4">
-                    <h3 id="modal-title" class="text-md md:text-lg font-black text-slate-800 uppercase italic leading-tight">Full Survey Review</h3>
-                    <p id="modal-type" class="text-[9px] md:text-[10px] font-black text-blue-600 uppercase tracking-widest"></p>
-                </div>
-                <button onclick="closeModal('details-modal')" class="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-white border shadow-sm text-slate-400 hover:text-red-500 font-bold">✕</button>
-            </div>
-            <div id="modal-body" class="p-5 md:p-8 overflow-y-auto bg-white flex-grow"></div>
-            <div class="p-5 bg-slate-50 border-t text-right">
-                <button onclick="closeModal('details-modal')" class="w-full md:w-auto px-8 py-3 bg-slate-800 text-white rounded-xl font-bold uppercase text-[10px] md:text-xs tracking-widest shadow-lg">Close View</button>
-            </div>
-        </div>
-    </div>
+                <a href="report-profiles.html" class="nav-card glass-panel p-8 rounded-[2.5rem] flex flex-col gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-xl shadow-lg">🌳</div>
+                    <div>
+                        <p class="text-lg font-black text-slate-800 uppercase italic">Profiles</p>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Customer Estate Databases</p>
+                    </div>
+                </a>
 
-    <div id="profile-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-slate-900/60 backdrop-blur-sm opacity-0 no-print">
-        <div class="modal-content glass-panel w-full max-w-3xl max-h-[92vh] overflow-hidden rounded-[2rem] md:rounded-[2.5rem] shadow-2xl translate-y-8 flex flex-col">
-            <div class="p-5 md:p-6 border-b flex justify-between items-center bg-slate-800 text-white">
-                <div class="pr-4">
-                    <h3 id="profile-modal-name" class="text-md md:text-lg font-black uppercase italic leading-tight">Customer Profile</h3>
-                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Complete History & Details</p>
-                </div>
-                <button onclick="closeModal('profile-modal')" class="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white font-bold">✕</button>
-            </div>
-            <div id="profile-modal-body" class="p-5 md:p-8 overflow-y-auto bg-white flex-grow"></div>
-            <div class="p-5 bg-slate-50 border-t text-right">
-                <button onclick="closeModal('profile-modal')" class="w-full md:w-auto px-8 py-3 bg-slate-800 text-white rounded-xl font-bold uppercase text-[10px] md:text-xs tracking-widest shadow-lg">Close Profile</button>
             </div>
         </div>
     </div>
 
     <script>
-        let fullData = []; 
-        let unfilteredSystemData = []; 
-        let currentFilteredData = [];
-        let globalCaseListData = [];
-
-        function setInitialDates() {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = now.getMonth();
-            const firstDay = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-            const lastDay = new Date(year, month + 1, 0).toISOString().split('T')[0];
-            document.getElementById('filter_start').value = firstDay;
-            document.getElementById('filter_end').value = lastDay;
-        }
-
-        async function fetchData() {
+        async function fetchDashboardData() {
             const start = document.getElementById('filter_start').value;
             const end = document.getElementById('filter_end').value;
-            if(!start || !end) return alert("Please select both dates");
-            const btn = document.getElementById('btn-generate');
-            btn.innerText = "Loading...";
             
-            const { data: filtered, error: filterErr } = await _supabase.from('ffb_logs')
-                .select('*') 
-                .or(`created_at.gte.${start}T00:00:00Z,close_case_date.gte.${start}T00:00:00Z`)
-                .or(`created_at.lte.${end}T23:59:59Z,close_case_date.lte.${end}T23:59:59Z`)
-                .order('created_at', {ascending: false});
-            
-            const { data: allRecords, error: allErr } = await _supabase.from('ffb_logs').select('*').order('created_at', {ascending: false});
-            
-            btn.innerText = "Generate";
-            if(filterErr || allErr) return alert((filterErr || allErr).message);
-            
-            fullData = filtered;
-            unfilteredSystemData = allRecords; 
-            applyFilters();
+            const { data, error } = await _supabase.from('ffb_logs')
+                .select('log_type, branch, pic_email')
+                .gte('created_at', start + 'T00:00:00')
+                .lte('created_at', end + 'T23:59:59');
+
+            if(error) return alert(error.message);
+
+            renderStats(data);
+            renderStaffSummary(data);
         }
 
-        function getCleanType(type) {
-            if (!type) return "Unknown";
-            const t = type.toLowerCase();
-            if (t.includes('new')) return 'New Customer Survey';
-            if (t.includes('inactive')) return 'Inactive Customer Survey';
-            if (t.includes('active') || t === 'survey') return 'Active Customer Survey';
-            return type.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+        function renderStats(data) {
+            document.getElementById('stat-new').innerText = data.filter(x => x.log_type.includes('New')).length;
+            document.getElementById('stat-active').innerText = data.filter(x => x.log_type.includes('Active')).length;
+            document.getElementById('stat-inactive').innerText = data.filter(x => x.log_type.includes('Inactive')).length;
         }
 
-        function applyFilters() {
-            const b = document.getElementById('search_branch').value.toLowerCase();
-            const t = document.getElementById('search_type').value.toLowerCase();
-            const s = document.getElementById('search_staff').value.toLowerCase();
-            
-            currentFilteredData = fullData.filter(i => {
-                const cleanType = getCleanType(i.log_type).toLowerCase();
-                return (!b || (i.branch && i.branch.toLowerCase() === b)) &&
-                       (!t || cleanType.includes(t)) &&
-                       (!s || (i.pic_email && i.pic_email.toLowerCase().includes(s)));
-            });
-            renderAll(currentFilteredData);
-        }
-
-        function switchTab(tab) {
-            const tabAll = document.getElementById('tab-all');
-            const tabSolved = document.getElementById('tab-solved');
-            const tabProfiles = document.getElementById('tab-profiles');
-            const viewAll = document.getElementById('view-all');
-            const viewSolved = document.getElementById('view-solved');
-            const viewProfiles = document.getElementById('view-profiles');
-
-            [tabAll, tabSolved, tabProfiles].forEach(t => t.className = 'py-4 px-6 text-[10px] uppercase tracking-widest text-slate-400 font-bold');
-            [viewAll, viewSolved, viewProfiles].forEach(v => v.classList.add('hidden'));
-
-            if (tab === 'all') {
-                tabAll.className = 'py-4 px-6 text-[10px] uppercase tracking-widest tab-active';
-                viewAll.classList.remove('hidden');
-            } else if (tab === 'solved') {
-                tabSolved.className = 'py-4 px-6 text-[10px] uppercase tracking-widest tab-active';
-                viewSolved.classList.remove('hidden');
-            } else if (tab === 'profiles') {
-                tabProfiles.className = 'py-4 px-6 text-[10px] uppercase tracking-widest tab-active';
-                viewProfiles.classList.remove('hidden');
-            }
-        }
-
-        function renderAll(data) {
-            const summaryTable = document.getElementById('summary-table');
-            const groups = {};
-            
-            const startStr = document.getElementById('filter_start').value;
-            const endStr = document.getElementById('filter_end').value;
-            const startRange = new Date(startStr).setHours(0,0,0,0);
-            const endRange = new Date(endStr).setHours(23,59,59,999);
-
-            const createdInPeriod = data.filter(i => {
-                const d = new Date(i.created_at).getTime();
-                return d >= startRange && d <= endRange;
-            });
-
-            let stats = { n:0, a:0, i:0 };
-
-            createdInPeriod.forEach(item => {
-                const type = getCleanType(item.log_type);
-                if(type === 'New Customer Survey') stats.n++;
-                else if(type === 'Active Customer Survey') stats.a++;
-                else if(type === 'Inactive Customer Survey') stats.i++;
+        function renderStaffSummary(data) {
+            const summary = {};
+            data.forEach(x => {
+                const staff = x.pic_email ? x.pic_email.split('@')[0].toUpperCase() : 'UNKNOWN';
+                if(!summary[staff]) summary[staff] = { branch: x.branch || '-', new:0, active:0, inactive:0, total:0 };
                 
-                const pic = item.pic_email ? item.pic_email.split('@')[0].toUpperCase() : 'UNKNOWN';
-                const branch = item.branch || 'NO BRANCH';
-                const key = `${branch}|${pic}`;
-                
-                if(!groups[key]) groups[key] = { branch, pic, typeCounts: {}, total: 0 };
-                groups[key].typeCounts[type] = (groups[key].typeCounts[type] || 0) + 1;
-                groups[key].total++;
+                if(x.log_type.includes('New')) summary[staff].new++;
+                if(x.log_type.includes('Active')) summary[staff].active++;
+                if(x.log_type.includes('Inactive')) summary[staff].inactive++;
+                summary[staff].total++;
             });
 
-            document.getElementById('stat-new').innerText = stats.n;
-            document.getElementById('stat-active').innerText = stats.a;
-            document.getElementById('stat-inactive').innerText = stats.i;
-
-            summaryTable.innerHTML = Object.values(groups).map(g => `
-                <tr class="hover:bg-slate-50">
-                    <td class="p-3 md:p-4 text-[10px] md:text-[11px] font-bold text-slate-500 uppercase">${g.branch}</td>
-                    <td class="p-3 md:p-4 text-[11px] md:text-xs font-black text-slate-800">${g.pic}</td>
-                    <td class="p-3 md:p-4 text-center font-bold text-green-600">${g.typeCounts['New Customer Survey'] || 0}</td>
-                    <td class="p-3 md:p-4 text-center font-bold text-blue-600">${g.typeCounts['Active Customer Survey'] || 0}</td>
-                    <td class="p-3 md:p-4 text-center font-bold text-slate-600">${g.typeCounts['Inactive Customer Survey'] || 0}</td>
-                    <td class="p-3 md:p-4 text-center font-black text-slate-900 bg-slate-50/50">${g.total}</td>
-                </tr>`).join('');
-
-            const table = document.getElementById('report-table');
-            table.innerHTML = createdInPeriod.map(i => {
-                const isFollowUp = (i.follow_up_action && i.follow_up_action !== 'No') ? '<span class="text-red-500 font-black">YES 🚩</span>' : '<span class="text-slate-300">No</span>';
-                return `
-                <tr>
-                    <td class="p-3 md:p-4 font-mono text-[10px]">${new Date(i.created_at).toLocaleDateString('en-GB')}</td>
-                    <td class="p-3 md:p-4 text-[9px] font-black uppercase tracking-tighter leading-tight">${getCleanType(i.log_type)}</td>
-                    <td class="p-3 md:p-4 font-bold text-slate-700 text-xs">${i.customer_name}</td>
-                    <td class="p-3 md:p-4 text-center font-bold text-[10px]">${isFollowUp}</td>
-                    <td class="p-3 md:p-4 text-center no-print"><button onclick="showDetails(${i.id})" class="text-[10px] font-black uppercase text-blue-600 hover:underline">Details →</button></td>
-                </tr>`;
-            }).join('');
-
-            const casesForList = data.filter(i => {
-                const createD = new Date(i.created_at).getTime();
-                const closeDateRaw = i.close_case_date || i.updated_at;
-                const closeD = new Date(closeDateRaw).getTime();
-                const createdIn = createD >= startRange && createD <= endRange && i.follow_up_action !== 'No';
-                const closedIn = (i.follow_up_action === 'Closed' || i.follow_up_action === 'Resolved') && closeD >= startRange && closeD <= endRange;
-                return createdIn || closedIn;
-            });
-            globalCaseListData = casesForList;
-
-            const solvedInPeriod = data.filter(i => {
-                if (i.follow_up_action !== 'Closed' && i.follow_up_action !== 'Resolved') return false;
-                const closeDateRaw = i.close_case_date || i.updated_at;
-                const closeD = new Date(closeDateRaw).getTime();
-                return closeD >= startRange && closeD <= endRange;
-            });
-
-            document.getElementById('solved-stat-created').innerText = createdInPeriod.filter(i => i.follow_up_action !== 'No').length;
-            document.getElementById('solved-stat-closed').innerText = solvedInPeriod.length;
-
-            const solvedTable = document.getElementById('solved-table');
-            solvedTable.innerHTML = casesForList.map(i => {
-                let displayIssue = "N/A";
-                let displayResolvedRemark = "-";
-                
-                const isSolved = (i.follow_up_action === 'Closed' || i.follow_up_action === 'Resolved');
-                
-                // Get Issue Raised
-                if(i.notes) {
-                    const notesList = i.notes.split(' | ');
-                    const issuePart = notesList.find(n => n.includes('Issues:') || n.includes('Reason:'));
-                    displayIssue = issuePart ? issuePart.split(':')[1].trim() : "Pending";
-                }
-
-                // Get Resolved Remark
-                if(isSolved && i.notes && (i.notes.includes('[CLOSED:') || i.notes.includes('[Resolved:'))) {
-                    const match = i.notes.match(/\[(CLOSED|Resolved): (.*?)\]/);
-                    displayResolvedRemark = match ? match[2] : "Resolved";
-                }
-
-                const closeDate = isSolved ? (i.close_case_date || i.updated_at) : null;
-                const highlightClass = isSolved ? 'bg-emerald-50 hover:bg-emerald-100/50' : 'bg-rose-50 hover:bg-rose-100/50';
-
-                let contentToShow = displayIssue; 
-                let contentClass = "text-slate-500";
-
-                if (isSolved) {
-                    if (displayResolvedRemark !== "-" && displayResolvedRemark !== "Resolved") {
-                         contentToShow = `<span class="font-bold">[Solution]</span> ${displayResolvedRemark}`;
-                    }
-                    contentClass = "text-emerald-700";
-                }
-
-                return `
-                <tr class="${highlightClass}">
-                    <td class="p-4 font-mono text-[10px]">${new Date(i.created_at).toLocaleDateString('en-GB')}</td>
-                    <td class="p-4 font-mono text-[10px] ${isSolved ? 'text-emerald-600 font-bold' : 'text-rose-400'}">${closeDate ? new Date(closeDate).toLocaleDateString('en-GB') : 'PENDING'}</td>
-                    <td class="p-4 font-black text-slate-700 text-[11px]">${i.customer_name || 'N/A'}</td>
-                    <td class="p-4 text-xs italic ${contentClass} max-w-[200px] truncate">${contentToShow}</td>
-                    <td class="p-4 text-center no-print"><button onclick="showDetails(${i.id})" class="text-[10px] font-black uppercase text-blue-600 hover:underline">View →</button></td>
-                </tr>`;
-            }).join('');
-            if(casesForList.length === 0) solvedTable.innerHTML = `<tr><td colspan="5" class="p-10 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">No relevant cases in this period</td></tr>`;
-
-            renderCustomerProfiles(unfilteredSystemData);
-        }
-
-        // --- UPDATED CUSTOMER PROFILE LOGIC (SPECIFIC REQUEST) ---
-        function renderCustomerProfiles(data) {
-            const profilesTable = document.getElementById('profiles-table');
-            const custMap = {};
-
-            data.forEach(i => {
-                const name = i.customer_name ? i.customer_name.trim().toUpperCase() : 'UNKNOWN';
-                if(!custMap[name]) {
-                    custMap[name] = {
-                        name: name,
-                        count: 0,
-                        latest: i.created_at,
-                        notes: i.notes || ''
-                    };
-                }
-                custMap[name].count++;
-                if(new Date(i.created_at) >= new Date(custMap[name].latest)) {
-                    custMap[name].latest = i.created_at;
-                    custMap[name].notes = i.notes || '';
-                }
-            });
-
-            const extractFromNotes = (notes, label) => {
-                if (!notes) return "-";
-                // Handles varied formats: "Label: Value" or "Label : Value"
-                const regex = new RegExp(`${label}\\s*:\\s*([^|]+)`, "i");
-                const match = notes.match(regex);
-                return match ? match[1].trim() : "-";
-            };
-
-            const profiles = Object.values(custMap).sort((a,b) => b.count - a.count);
-            profilesTable.innerHTML = profiles.map(p => `
+            const html = Object.keys(summary).map(s => `
                 <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="p-4 font-black text-slate-800 text-xs uppercase">${p.name}</td>
-                    <td class="p-4 font-bold text-slate-600 text-[10px] uppercase">${extractFromNotes(p.notes, "Estate Location")}</td>
-                    <td class="p-4 font-black text-slate-500 text-[10px] uppercase italic">${extractFromNotes(p.notes, "Estate Area Size \\(Ha\\)")}</td>
-                    <td class="p-4 font-black text-blue-600 text-[10px] uppercase tracking-tighter">${extractFromNotes(p.notes, "Contact Number")}</td>
-                    <td class="p-4 text-center font-black text-slate-800 text-xs">${p.count}</td>
-                    <td class="p-4 text-center font-bold text-slate-400 text-[10px]">${new Date(p.latest).toLocaleDateString('en-GB')}</td>
-                    <td class="p-4 text-center no-print">
-                        <button onclick="showCustomerProfile('${p.name.replace(/'/g, "\\'")}')" 
-                                class="bg-slate-800 text-white px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tighter hover:bg-black transition-all">
-                            Look More
-                        </button>
-                    </td>
+                    <td class="p-4 text-[9px] uppercase text-slate-400 font-black">${summary[s].branch}</td>
+                    <td class="p-4 text-slate-800 uppercase tracking-tighter">${s}</td>
+                    <td class="p-4 text-center text-green-600">${summary[s].new}</td>
+                    <td class="p-4 text-center text-blue-600">${summary[s].active}</td>
+                    <td class="p-4 text-center text-slate-400">${summary[s].inactive}</td>
+                    <td class="p-4 text-center text-slate-900 bg-slate-50">${summary[s].total}</td>
                 </tr>
             `).join('');
-
-            if(profiles.length === 0) profilesTable.innerHTML = `<tr><td colspan="7" class="p-10 text-center text-slate-400 font-bold text-xs uppercase tracking-widest">No customer data found</td></tr>`;
+            
+            document.getElementById('summary-table').innerHTML = html || '<tr><td colspan="6" class="p-10 text-center text-slate-300">No records for this range</td></tr>';
         }
 
-        function showCustomerProfile(customerName) {
-            const history = unfilteredSystemData.filter(i => (i.customer_name || '').trim().toUpperCase() === customerName.toUpperCase());
-            if (history.length === 0) return;
+        window.onload = () => {
+            const now = new Date();
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-            const latest = history[0];
-            document.getElementById('profile-modal-name').innerText = customerName;
+            const toLocalISO = (date) => {
+                const offset = date.getTimezoneOffset() * 60000;
+                return new Date(date.getTime() - offset).toISOString().split('T')[0];
+            };
 
-            let historyHTML = history.map(h => `
-                <div class="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:border-blue-200 transition-all group">
-                    <div class="space-y-1">
-                        <div class="flex items-center gap-2">
-                            <span class="text-[9px] font-black px-2 py-0.5 rounded bg-white border text-slate-500 uppercase tracking-tighter">${new Date(h.created_at).toLocaleDateString('en-GB')}</span>
-                            <span class="text-[10px] font-black text-slate-800 uppercase italic">${getCleanType(h.log_type)}</span>
-                        </div>
-                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-1">Staff: ${h.pic_email ? h.pic_email.split('@')[0].toUpperCase() : 'N/A'}</p>
-                    </div>
-                    <button onclick="showDetails(${h.id})" class="text-[9px] font-black text-blue-600 uppercase tracking-widest group-hover:underline">View Survey →</button>
-                </div>
-            `).join('');
-
-            document.getElementById('profile-modal-body').innerHTML = `
-                <div class="space-y-8">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="p-5 bg-blue-50/50 rounded-3xl border border-blue-100">
-                            <p class="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] mb-3">Customer Core Data</p>
-                            <div class="space-y-3">
-                                <div>
-                                    <label class="block text-[8px] font-black text-slate-400 uppercase">Registered Branch</label>
-                                    <p class="text-xs font-black text-slate-700">${latest.branch || 'N/A'}</p>
-                                </div>
-                                <div>
-                                    <label class="block text-[8px] font-black text-slate-400 uppercase">Total System Engagements</label>
-                                    <p class="text-xs font-black text-slate-700">${history.length} Surveys Logged</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="p-5 bg-emerald-50/50 rounded-3xl border border-emerald-100">
-                            <p class="text-[9px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-3">Latest Status</p>
-                            <div class="space-y-3">
-                                <div>
-                                    <label class="block text-[8px] font-black text-slate-400 uppercase">Last Activity</label>
-                                    <p class="text-xs font-black text-slate-700">${new Date(latest.created_at).toLocaleDateString('en-GB')}</p>
-                                </div>
-                                <div>
-                                    <label class="block text-[8px] font-black text-slate-400 uppercase">Recent Feedback Type</label>
-                                    <p class="text-xs font-black text-slate-700">${getCleanType(latest.log_type)}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <div class="flex items-center gap-2 mb-4">
-                            <div class="h-[2px] flex-grow bg-slate-100"></div>
-                            <span class="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">Full Engagement History</span>
-                            <div class="h-[2px] flex-grow bg-slate-100"></div>
-                        </div>
-                        <div class="space-y-3">
-                            ${historyHTML}
-                        </div>
-                    </div>
-                </div>`;
-
-            const modal = document.getElementById('profile-modal');
-            modal.classList.remove('hidden');
-            setTimeout(() => modal.classList.remove('opacity-0'), 10);
-        }
-
-        function generateCustomerProfileReport() {
-            if (unfilteredSystemData.length === 0) return alert("No customer data available.");
-            const custMap = {};
-            unfilteredSystemData.forEach(i => {
-                const name = i.customer_name ? i.customer_name.trim().toUpperCase() : 'UNKNOWN';
-                if(!custMap[name]) {
-                    custMap[name] = { Name: name, Branch: i.branch || 'N/A', Total_Surveys: 0, Latest_Survey: i.created_at };
-                }
-                custMap[name].Total_Surveys++;
-                if(new Date(i.created_at) > new Date(custMap[name].Latest_Survey)) {
-                    custMap[name].Latest_Survey = i.created_at;
-                }
-            });
-
-            const dataToExport = Object.values(custMap).map(p => ({
-                ...p,
-                Latest_Survey: new Date(p.Latest_Survey).toLocaleDateString('en-GB')
-            }));
-
-            const newWindow = window.open('', '_blank');
-            let htmlContent = `
-            <html>
-            <head>
-                <title>All Customer Profile</title>
-                <script src="https://cdn.tailwindcss.com"><\/script>
-                <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"><\/script>
-                <style>
-                    @media print { .no-print { display: none; } }
-                    body { font-family: sans-serif; padding: 40px; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                    th, td { border: 1px solid #e2e8f0; padding: 8px; font-size: 11px; text-align: left; }
-                    th { background: #f8fafc; font-weight: bold; text-transform: uppercase; }
-                </style>
-            </head>
-            <body>
-                <div class="no-print flex gap-3 mb-8 justify-end">
-                    <button onclick="downloadExcel()" class="bg-blue-600 text-white px-4 py-2 rounded text-xs font-bold">Download Excel</button>
-                    <button onclick="window.print()" class="bg-slate-600 text-white px-4 py-2 rounded text-xs font-bold">Print PDF</button>
-                </div>
-                <h1 class="text-xl font-bold uppercase italic">All Customer Profile List (All Records)</h1>
-                <table id="profile-export-table">
-                    <thead><tr><th>Customer Name</th><th>Branch</th><th>Total Surveys</th><th>Latest Survey Date</th></tr></thead>
-                    <tbody>
-                        ${dataToExport.map(p => `<tr><td>${p.Name}</td><td>${p.Branch}</td><td>${p.Total_Surveys}</td><td>${p.Latest_Survey}</td></tr>`).join('')}
-                    </tbody>
-                </table>
-                <script>function downloadExcel(){ XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById('profile-export-table')), "MJM_Customer_Profiles.xlsx"); }<\/script>
-            </body>
-            </html>`;
-            newWindow.document.write(htmlContent);
-            newWindow.document.close();
-        }
-
-        function generateCaseReport() {
-            if (globalCaseListData.length === 0) return alert("No case data to export.");
-            const start = document.getElementById('filter_start').value;
-            const end = document.getElementById('filter_end').value;
-            const dateRange = `${new Date(start).toLocaleDateString('en-GB')} to ${new Date(end).toLocaleDateString('en-GB')}`;
-            const newWindow = window.open('', '_blank');
-            let htmlContent = `
-            <html>
-            <head>
-                <title>MJM Case Report</title>
-                <script src="https://cdn.tailwindcss.com"><\/script>
-                <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"><\/script>
-                <style>
-                    @media print { .no-print { display: none; } }
-                    body { font-family: sans-serif; padding: 40px; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                    th, td { border: 1px solid #e2e8f0; padding: 8px; font-size: 10px; text-align: left; }
-                    th { background: #f8fafc; font-weight: bold; text-transform: uppercase; }
-                </style>
-            </head>
-            <body>
-                <div class="no-print flex gap-3 mb-8 justify-end">
-                    <button onclick="downloadExcel()" class="bg-emerald-600 text-white px-4 py-2 rounded text-xs font-bold">Download Excel</button>
-                    <button onclick="window.print()" class="bg-blue-600 text-white px-4 py-2 rounded text-xs font-bold">Print PDF</button>
-                </div>
-                <h1 class="text-xl font-bold uppercase italic">Case Opened & Closed Report</h1>
-                <p class="text-sm text-slate-500 mb-4">Period: ${dateRange}</p>
-                <table id="case-table">
-                    <thead>
-                        <tr>
-                            <th>Date Opened</th>
-                            <th>Date Solved</th>
-                            <th>Branch</th>
-                            <th>Customer Name</th>
-                            <th>Issue Raised</th>
-                            <th>Resolved Remark</th>
-                            <th>Solved By</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${globalCaseListData.map(i => {
-                            const isSolved = (i.follow_up_action === 'Closed' || i.follow_up_action === 'Resolved');
-                            const staff = i.pic_email ? i.pic_email.split('@')[0].toUpperCase() : 'N/A';
-                            
-                            let issueRaised = "N/A";
-                            let resolvedRemark = "-";
-
-                            if(i.notes) {
-                                const notesList = i.notes.split(' | ');
-                                const issuePart = notesList.find(n => n.includes('Issues:') || n.includes('Reason:'));
-                                issueRaised = issuePart ? issuePart.split(':')[1].trim() : "Pending";
-                            }
-                            
-                            if(isSolved && i.notes && (i.notes.includes('[CLOSED:') || i.notes.includes('[Resolved:'))) {
-                                const match = i.notes.match(/\[(CLOSED|Resolved): (.*?)\]/);
-                                resolvedRemark = match ? match[2] : "Resolved";
-                            }
-
-                            const closedDate = isSolved ? (i.close_case_date || i.updated_at) : null;
-                            return `
-                            <tr>
-                                <td>${new Date(i.created_at).toLocaleDateString('en-GB')}</td>
-                                <td>${closedDate ? new Date(closedDate).toLocaleDateString('en-GB') : 'PENDING'}</td>
-                                <td>${i.branch || 'N/A'}</td>
-                                <td>${i.customer_name}</td>
-                                <td>${issueRaised}</td>
-                                <td>${resolvedRemark}</td>
-                                <td>${staff}</td>
-                                <td>${isSolved ? 'RESOLVED' : 'PENDING'}</td>
-                            </tr>`;
-                        }).join('')}
-                    </tbody>
-                </table>
-                <script>function downloadExcel(){ XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById('case-table')), "MJM_Case_Report.xlsx"); }<\/script>
-            </body>
-            </html>`;
-            newWindow.document.write(htmlContent);
-            newWindow.document.close();
-        }
-
-        function generateDetailedLogReport() {
-            if (currentFilteredData.length === 0) return alert("No data available. Generate first.");
-            const start = document.getElementById('filter_start').value;
-            const end = document.getElementById('filter_end').value;
-            const dateRange = `${new Date(start).toLocaleDateString('en-GB')} to ${new Date(end).toLocaleDateString('en-GB')}`;
-            const newWindow = window.open('', '_blank');
-            let htmlContent = `
-            <html>
-            <head>
-                <title>MJM Detailed Log</title>
-                <script src="https://cdn.tailwindcss.com"><\/script>
-                <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"><\/script>
-                <style>
-                    @media print { .no-print { display: none; } }
-                    body { font-family: sans-serif; padding: 40px; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                    th, td { border: 1px solid #e2e8f0; padding: 8px; font-size: 10px; text-align: left; }
-                    th { background: #f8fafc; }
-                </style>
-            </head>
-            <body>
-                <div class="no-print flex gap-3 mb-8 justify-end">
-                    <button onclick="downloadExcel()" class="bg-emerald-600 text-white px-4 py-2 rounded">Download Excel</button>
-                    <button onclick="window.print()" class="bg-blue-600 text-white px-4 py-2 rounded">Print PDF</button>
-                </div>
-                <h1 class="text-xl font-bold uppercase italic">Detailed Log (${dateRange})</h1>
-                <table id="main-data-table">
-                    <thead><tr><th>Date Created</th><th>Branch</th><th>Staff</th><th>Customer Name</th><th>Survey Type</th><th>Full Survey Details</th><th>Follow Up?</th><th>Close Case Remark</th><th>Close Case Date</th></tr></thead>
-                    <tbody>
-                        ${currentFilteredData.map(i => {
-                            const staff = i.pic_email ? i.pic_email.split('@')[0].toUpperCase() : 'N/A';
-                            const fuStatus = (i.follow_up_action && i.follow_up_action !== 'No') ? i.follow_up_action : 'No';
-                            let closeRemark = "-";
-                            let closeDateStr = "-";
-                            if (i.follow_up_action === 'Closed' || i.follow_up_action === 'Resolved') {
-                                if(i.notes && (i.notes.includes('[CLOSED:') || i.notes.includes('[Resolved:'))) {
-                                    const match = i.notes.match(/\[(CLOSED|Resolved): (.*?)\]/);
-                                    closeRemark = match ? match[2] : "Resolved";
-                                } else { closeRemark = "Closed"; }
-                                const rawDate = i.close_case_date || i.updated_at;
-                                if(rawDate) closeDateStr = new Date(rawDate).toLocaleDateString('en-GB');
-                            }
-                            return `<tr><td>${new Date(i.created_at).toLocaleDateString('en-GB')}</td><td>${i.branch || 'N/A'}</td><td>${staff}</td><td>${i.customer_name}</td><td>${getCleanType(i.log_type)}</td><td>${(i.notes || '').replaceAll(' | ', '<br>')}</td><td>${fuStatus}</td><td>${closeRemark}</td><td>${closeDateStr}</td></tr>`;
-                        }).join('')}
-                    </tbody>
-                </table>
-                <script>function downloadExcel(){ XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById('main-data-table')), "MJM_Report.xlsx"); }<\/script>
-            </body>
-            </html>`;
-            newWindow.document.write(htmlContent);
-            newWindow.document.close();
-        }
-
-        function showDetails(id) {
-            const item = unfilteredSystemData.find(x => x.id === id); 
-            if(!item) return;
-
-            document.getElementById('modal-title').innerText = item.customer_name;
-            document.getElementById('modal-type').innerText = getCleanType(item.log_type);
-
-            let notesHTML = '';
-            let closeRemark = '';
-
-            if (item.notes) {
-                if(item.notes.includes('[CLOSED:') || item.notes.includes('[Resolved:')) {
-                    const match = item.notes.match(/\[(CLOSED|Resolved): (.*?)\]/);
-                    closeRemark = match ? match[2] : "";
-                }
-
-                const parts = item.notes.split(' | ');
-                notesHTML = parts.map(part => {
-                    if (!part.trim() || part.includes('[CLOSED:') || part.includes('[Resolved:')) return '';
-                    const splitIndex = part.indexOf(':');
-                    const label = splitIndex > -1 ? part.substring(0, splitIndex).trim() : 'Detail';
-                    const value = splitIndex > -1 ? part.substring(splitIndex + 1).trim() : part.trim();
-                    return `
-                        <div class="mb-4 last:mb-0">
-                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">${label}</label>
-                            <div class="p-3 bg-slate-50 border rounded-xl text-xs font-medium text-slate-700 leading-relaxed">${value || '<span class="italic text-slate-300">No data provided</span>'}</div>
-                        </div>`;
-                }).join('');
-            } else {
-                notesHTML = '<p class="text-xs italic text-slate-400">No survey details available.</p>';
-            }
-
-            document.getElementById('modal-body').innerHTML = `
-                <div class="space-y-6">
-                    <div>
-                        <div class="flex items-center gap-2 mb-4">
-                            <div class="h-[2px] flex-grow bg-slate-100"></div>
-                            <span class="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">Survey Responses</span>
-                            <div class="h-[2px] flex-grow bg-slate-100"></div>
-                        </div>
-                        <div class="grid grid-cols-1 gap-1">${notesHTML}</div>
-                    </div>
-
-                    ${(item.follow_up_action && item.follow_up_action !== 'No') ? `
-                    <div class="mt-8">
-                        <div class="flex items-center gap-2 mb-4">
-                            <div class="h-[2px] flex-grow bg-emerald-100"></div>
-                            <span class="text-[9px] font-black text-emerald-400 uppercase tracking-[0.2em]">Case Status</span>
-                            <div class="h-[2px] flex-grow bg-emerald-100"></div>
-                        </div>
-                        <div class="p-4 rounded-2xl border-2 ${(item.follow_up_action === 'Closed' || item.follow_up_action === 'Resolved') ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}">
-                            <div class="flex justify-between items-start ${closeRemark ? 'mb-4' : ''}">
-                                <div><p class="text-[10px] font-black text-slate-500 uppercase mb-1">Current Action</p><p class="text-sm font-black ${(item.follow_up_action === 'Closed' || item.follow_up_action === 'Resolved') ? 'text-emerald-700' : 'text-amber-700'} uppercase">${item.follow_up_action}</p></div>
-                                ${item.close_case_date ? `<div class="text-right"><p class="text-[10px] font-black text-slate-500 uppercase mb-1">Resolved Date</p><p class="text-xs font-bold text-slate-700">${new Date(item.close_case_date).toLocaleDateString('en-GB')}</p></div>` : ''}
-                            </div>
-                            ${closeRemark ? `<div class="pt-3 border-t border-emerald-200/50"><label class="block text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">case closed remark</label><p class="text-xs font-bold text-emerald-900 leading-relaxed">${closeRemark}</p></div>` : ''}
-                        </div>
-                    </div>` : ''}
-                </div>`;
-
-            const modal = document.getElementById('details-modal');
-            modal.classList.remove('hidden');
-            setTimeout(() => modal.classList.remove('opacity-0'), 10);
-        }
-
-        function closeModal(id) {
-            const modal = document.getElementById(id);
-            modal.classList.add('opacity-0');
-            setTimeout(() => modal.classList.add('hidden'), 300);
-        }
-
-        window.onload = async () => { setInitialDates(); await fetchData(); };
+            document.getElementById('filter_start').value = toLocalISO(firstDay);
+            document.getElementById('filter_end').value = toLocalISO(lastDay);
+            
+            fetchDashboardData();
+        };
     </script>
 </body>
 </html>
