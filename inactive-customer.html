@@ -13,11 +13,7 @@
         .selected-card { border-color: #3b82f6 !important; background-color: #eff6ff !important; }
         .form-label { display: block; font-size: 0.75rem; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 0.25rem; }
         .soil-box { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; color: #1e293b; }
-        /* Style for the "Look In" log entries */
-        .log-entry { border-left: 4px solid #cbd5e1; padding-left: 1rem; position: relative; }
-        .log-entry::before { content: ''; position: absolute; left: -10px; top: 0; width: 16px; height: 16px; background: white; border: 4px solid #94a3b8; border-radius: 50%; }
-
-        /* Modal Style Top-up */
+        
         #history-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
         .modal-content { background: white; width: 100%; max-width: 600px; max-height: 80vh; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column; }
     </style>
@@ -44,7 +40,6 @@
         </div>
 
         <div class="bg-white p-6 md:p-8 rounded-3xl shadow-2xl border border-slate-200 mb-8">
-            
             <div class="mb-6">
                 <button onclick="createNewDirect()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase shadow-lg hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
                     <span>+ Create Inactive Customer Profile</span>
@@ -56,7 +51,6 @@
                     <input type="text" id="search_input" placeholder="Search Name, Location, or Contact..." class="flex-1 p-4 border-2 border-slate-100 rounded-2xl outline-none focus:border-slate-500">
                     <button type="button" onclick="performSearch()" class="bg-slate-700 text-white px-6 py-2 rounded-2xl font-black">Search</button>
                 </div>
-                
                 <div>
                     <h3 id="list-title" class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Customer Profile List</h3>
                     <div id="search-results" class="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto pr-2 border-b pb-4">
@@ -80,15 +74,6 @@
                     </div>
                 </div>
 
-                <div id="history-container" class="hidden space-y-4 bg-slate-900 p-6 rounded-3xl border-2 border-slate-800 shadow-2xl">
-                    <div class="flex justify-between items-center">
-                        <h3 class="font-black text-white uppercase italic text-sm tracking-widest">📋 Activity Log</h3>
-                        <button onclick="hideHistory()" class="text-[10px] font-bold text-slate-400 uppercase hover:text-white">Close [X]</button>
-                    </div>
-                    <div id="history-list" class="space-y-6 max-h-[400px] overflow-y-auto pr-2 py-4">
-                        </div>
-                </div>
-
                 <div id="editor-container" class="hidden bg-white p-6 rounded-3xl border-2 border-slate-200 space-y-6">
                     <h3 id="editor-title" class="text-lg font-black italic underline uppercase"></h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -101,7 +86,6 @@
                                 <label class="soil-box"><input type="checkbox" id="soil_peat" class="w-5 h-5 accent-blue-600"> PEAT SOIL AREA</label>
                             </div>
                         </div>
-
                         <div class="md:col-span-2 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                             <label class="form-label text-blue-800">Currently supply to our collection center?</label>
                             <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
@@ -113,12 +97,10 @@
                                 <label class="soil-box"><input type="checkbox" name="mjm_center" value="MJM POM" class="w-4 h-4 accent-blue-600"> MJM (Palm Oil Mill)</label>
                             </div>
                         </div>
-
                         <div><label class="form-label">Total Area (Ha)</label><input type="number" id="f_area" class="w-full p-3 border rounded-xl"></div>
                         <div><label class="form-label">Estimated Monthly Supply (mt)</label><input type="number" id="f_ton" class="w-full p-3 border rounded-xl"></div>
                         <div><label class="form-label">Estate Location</label><input type="text" id="f_loc" class="w-full p-3 border rounded-xl"></div>
                         <div><label class="form-label">Google Location Link</label><input type="text" id="f_google" placeholder="http://..." class="w-full p-3 border rounded-xl"></div>
-
                         <div class="md:col-span-2 border-t pt-4 mt-2">
                             <label class="form-label italic">Currently Supply To Other Ramp?</label>
                             <div class="space-y-2 mt-2">
@@ -168,70 +150,27 @@
         let currentData = null;
 
         async function loadAllCustomers() {
-            const { data, error } = await _supabase.from('ffb_logs')
-                .select('*')
-                .not('log_type', 'ilike', '%Survey%')
-                .order('customer_name', { ascending: true });
+            const { data } = await _supabase.from('ffb_logs').select('*').not('log_type', 'ilike', '%Survey%').order('customer_name', { ascending: true });
             if (data) renderList(data);
         }
 
         async function performSearch() {
             const val = document.getElementById('search_input').value;
-            if (val.length < 1) {
-                document.getElementById('list-title').innerText = "Customer Profile List";
-                loadAllCustomers();
-                return;
-            }
-
-            const { data } = await _supabase.from('ffb_logs')
-                .select('*')
-                .not('log_type', 'ilike', '%Survey%')
-                .or(`customer_name.ilike.%${val}%,location.ilike.%${val}%`)
-                .order('customer_name', { ascending: true });
-
-            document.getElementById('list-title').innerText = "Search Results";
+            if (val.length < 1) { loadAllCustomers(); return; }
+            const { data } = await _supabase.from('ffb_logs').select('*').not('log_type', 'ilike', '%Survey%').or(`customer_name.ilike.%${val}%,location.ilike.%${val}%`).order('customer_name', { ascending: true });
             renderList(data, val);
         }
 
         function renderList(data, searchVal = "") {
             const resDiv = document.getElementById('search-results');
-            if (data?.length > 0) {
-                resDiv.innerHTML = data.map(rec => {
-                    const estTon = rec.notes?.match(/Est Monthly:\s*([\d.]+)/)?.[1] || "0";
-                    return `
-                    <div class="customer-card p-4 bg-white border rounded-2xl shadow-sm hover:border-slate-400 mb-2 flex justify-between items-center">
-                        <div onclick='selectCustomer(${JSON.stringify(rec).replace(/'/g, "&apos;")}, this.parentElement)' class="flex-1 cursor-pointer">
-                            <div class="font-black text-slate-800"><span>${rec.customer_name}</span></div>
-                            <div class="text-[10px] text-slate-500 font-semibold mt-1 uppercase">📍 ${rec.location.split(' (Link:')[0]}</div>
-                            <div class="flex gap-4 mt-2">
-                                <span class="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">📏 ${rec.area_size || 0} Ha</span>
-                                <span class="text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded">📊 ${estTon} MT/mo</span>
-                            </div>
-                        </div>
-                        <button onclick='viewHistoryModal("${rec.customer_name}")' class="ml-4 bg-blue-50 text-blue-700 px-3 py-2 rounded-xl text-[10px] font-black uppercase border border-blue-100 hover:bg-blue-600 hover:text-white transition-all">
-                            Look In
-                        </button>
-                    </div>`;
-                }).join('');
-            } else {
-                resDiv.innerHTML = `
-                <div class="text-center py-6 text-slate-400 font-bold uppercase text-xs">
-                    No matching profile found.
-                    ${searchVal ? `<br><button onclick="createNewFromSearch('${searchVal}')" class="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg">+ Create "${searchVal}"</button>` : ''}
-                </div>`;
-            }
-        }
-
-        function createNewDirect() {
-            const typedName = document.getElementById('search_input').value || "";
-            createNewFromSearch(typedName);
-        }
-
-        function createNewFromSearch(name) {
-            currentData = { customer_name: name, location: "", area_size: "", notes: "" };
-            document.getElementById('profile-area').classList.remove('hidden');
-            showMode('add');
-            document.getElementById('editor-container').scrollIntoView({ behavior: 'smooth' });
+            resDiv.innerHTML = data?.length > 0 ? data.map(rec => `
+                <div class="customer-card p-4 bg-white border rounded-2xl shadow-sm hover:border-slate-400 mb-2 flex justify-between items-center">
+                    <div onclick='selectCustomer(${JSON.stringify(rec).replace(/'/g, "&apos;")}, this.parentElement)' class="flex-1 cursor-pointer">
+                        <div class="font-black text-slate-800 uppercase">${rec.customer_name}</div>
+                        <div class="text-[10px] text-slate-500 font-semibold mt-1 uppercase">📍 ${rec.location || 'No Location'}</div>
+                    </div>
+                    <button onclick='viewHistoryModal("${rec.customer_name}")' class="ml-4 bg-blue-50 text-blue-700 px-3 py-2 rounded-xl text-[10px] font-black uppercase border border-blue-100">Look In</button>
+                </div>`).join('') : `<div class="text-center py-6 text-slate-400 font-bold uppercase text-xs">No profile found.<br><button onclick="createNewFromSearch('${searchVal}')" class="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg font-black uppercase text-[10px]">+ Create Profile</button></div>`;
         }
 
         function selectCustomer(data, el) {
@@ -242,225 +181,148 @@
             document.getElementById('profile-display').classList.remove('hidden');
             document.getElementById('editor-container').classList.add('hidden');
             document.getElementById('ffb-form').classList.add('hidden');
-            document.getElementById('history-container').classList.add('hidden');
             document.getElementById('d_name').innerText = data.customer_name;
-            document.getElementById('d_loc').innerText = data.location.split(' (Link:')[0];
+            document.getElementById('d_loc').innerText = data.location || "N/A";
             document.getElementById('d_size').innerText = (data.area_size || 0) + " Ha";
-            document.getElementById('d_ton').innerText = (data.notes?.match(/Est Monthly:\s*([\d.]+)/)?.[1] || 0) + " mt";
-            
+            document.getElementById('d_ton').innerText = (data.tonnage || 0) + " mt";
             document.getElementById('profile-look-in').onclick = () => viewHistoryModal(data.customer_name);
         }
 
         async function viewHistoryModal(customerName) {
             const modal = document.getElementById('history-modal');
-            const list = document.getElementById('history-list-modal');
-            const nameHeader = document.getElementById('modal-cust-name');
             modal.style.display = 'flex';
-            nameHeader.innerText = customerName;
-            list.innerHTML = '<p class="text-center text-xs font-bold text-slate-400 animate-pulse">FETCHING SURVEYS...</p>';
+            document.getElementById('modal-cust-name').innerText = customerName;
+            const list = document.getElementById('history-list-modal');
+            list.innerHTML = '<p class="text-center animate-pulse text-xs font-bold text-slate-400">LOADING...</p>';
             
-            const { data, error } = await _supabase.from('ffb_logs')
-                .select('*')
-                .eq('customer_name', customerName)
-                .ilike('log_type', '%Survey%')
-                .order('created_at', { ascending: false });
+            const { data } = await _supabase.from('ffb_logs').select('*').eq('customer_name', customerName).ilike('log_type', '%Survey%').order('created_at', { ascending: false });
 
-            if (!data || data.length === 0) {
-                list.innerHTML = '<div class="text-center py-10 text-slate-400 font-bold text-xs">NO SURVEY HISTORY FOUND</div>';
-                return;
-            }
-            list.innerHTML = data.map(item => {
-                const date = new Date(item.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-                const cleanNotes = item.notes ? item.notes.replace(/\|/g, '<br>') : 'No details';
-                return `
-                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+            list.innerHTML = data?.length ? data.map(item => `
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-xs">
                     <div class="flex justify-between items-start mb-2">
-                        <span class="text-[10px] font-black bg-slate-200 px-2 py-0.5 rounded text-slate-600">${date}</span>
-                        <span class="text-[9px] font-bold text-blue-600 uppercase italic">${item.log_type}</span>
+                        <span class="bg-slate-200 px-2 py-0.5 rounded font-black text-slate-600">${new Date(item.created_at).toLocaleDateString('en-GB')}</span>
+                        <span class="font-bold text-blue-600 uppercase italic">${item.log_type}</span>
                     </div>
-                    <div class="text-[11px] font-medium text-slate-600 leading-relaxed">${cleanNotes}</div>
-                    <div class="mt-2 text-[9px] text-slate-400 font-bold italic">By: ${item.pic_email}</div>
-                </div>`;
-            }).join('');
-        }
-
-        function closeModal() { 
-            document.getElementById('history-modal').style.display = 'none'; 
-        }
-
-        async function lookIn() {
-            const container = document.getElementById('history-container');
-            container.classList.remove('hidden');
-            
-            const listDiv = document.getElementById('history-list');
-            listDiv.innerHTML = '<p class="text-center py-4 text-xs font-bold text-slate-400 animate-pulse">SEARCHING RECORDS...</p>';
-
-            const { data } = await _supabase.from('ffb_logs')
-                .select('*')
-                .eq('customer_name', currentData.customer_name)
-                .order('created_at', { ascending: false });
-
-            if (data?.length > 0) {
-                listDiv.innerHTML = data.map(log => `
-                <div class="log-entry bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">${log.log_type}</span>
-                            <p class="text-[9px] text-slate-500 font-bold uppercase">${new Date(log.created_at).toLocaleString()}</p>
-                        </div>
-                        <span class="text-[9px] bg-slate-700 text-slate-300 px-2 py-1 rounded-md font-mono">${log.branch || 'N/A'}</span>
+                    <div class="space-y-1 text-slate-700">
+                        <p><b>Reason:</b> ${item.retraction_reason || '-'}</p>
+                        <p><b>Advice:</b> ${item.improvement_suggestions || '-'}</p>
+                        <p><b>Other Ramps:</b> ${item.current_supply_to || '-'}</p>
+                        <p><b>Follow Up:</b> ${item.follow_up_action || '-'}</p>
                     </div>
-                    <p class="text-xs text-slate-200 font-medium leading-relaxed">${log.notes || 'No details provided.'}</p>
-                    <div class="mt-2 flex justify-between items-center">
-                         <span class="text-[9px] font-bold text-slate-500 italic">By: ${log.pic_email?.split('@')[0]}</span>
-                         ${log.follow_up_action && log.follow_up_action !== 'No' ? `<span class="text-[9px] font-black text-emerald-400 uppercase">📢 Follow-up Required</span>` : ''}
-                    </div>
-                </div>`).join('');
-            } else {
-                listDiv.innerHTML = '<p class="text-center py-4 text-xs font-bold text-slate-500 uppercase">No Activity Found.</p>';
-            }
-            container.scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function hideHistory() {
-            document.getElementById('history-container').classList.add('hidden');
+                    <div class="mt-2 text-[9px] text-slate-400 italic">By: ${item.pic_email}</div>
+                </div>`).join('') : '<div class="text-center py-10 text-slate-400 font-bold">NO SURVEY HISTORY</div>';
         }
 
         function showMode(mode) {
             if(mode === 'survey') {
                 document.getElementById('ffb-form').classList.remove('hidden');
                 document.getElementById('editor-container').classList.add('hidden');
-                document.getElementById('history-container').classList.add('hidden');
                 return;
             }
-            const container = document.getElementById('editor-container');
-            container.classList.remove('hidden');
+            document.getElementById('editor-container').classList.remove('hidden');
             document.getElementById('ffb-form').classList.add('hidden');
-            document.getElementById('history-container').classList.add('hidden');
-            document.getElementById('profile-display').classList.remove('hidden');
             document.getElementById('editor-title').innerText = mode === 'update' ? 'Update Profile' : 'Create New Profile';
-            
             fillForm(mode === 'add');
             document.getElementById('save-btn').onclick = mode === 'update' ? submitUpdate : submitNewEstate;
         }
 
-        function fillForm(isNewEstate = false) {
-            document.getElementById('f_name').value = currentData.customer_name;
-            const notesStr = currentData.notes || "";
-            document.getElementById('f_contact').value = notesStr.match(/Contact:\s*([^.]+)/)?.[1] || "";
+        function fillForm(isNew = false) {
+            document.getElementById('f_name').value = currentData.customer_name || "";
+            document.getElementById('f_contact').value = isNew ? "" : (currentData.contact_no || "");
+            document.getElementById('f_loc').value = isNew ? "" : (currentData.location || "");
+            document.getElementById('f_google').value = isNew ? "" : (currentData.google_link || "");
+            document.getElementById('f_area').value = isNew ? "" : (currentData.area_size || "");
+            document.getElementById('f_ton').value = isNew ? "" : (currentData.tonnage || "");
             
-            const soilPart = notesStr.match(/Soil:\s*([^.]+)/)?.[1] || "";
-            document.getElementById('soil_mineral').checked = soilPart.includes('Mineral');
-            document.getElementById('soil_peat').checked = soilPart.includes('Peat');
-
-            const mjmPart = notesStr.match(/MJMSentTo:\s*([^.]+)/)?.[1] || "";
-            document.querySelectorAll('input[name="mjm_center"]').forEach(cb => {
-                cb.checked = mjmPart.includes(cb.value);
-            });
-
-            const currentSupplies = notesStr.match(/CurrentSupplies:\s*([^.]+)/)?.[1] || "";
-            const supplies = currentSupplies.split(',');
-            for(let i=1; i<=3; i++) {
-                const part = supplies[i-1] || "";
-                document.getElementById('s_name'+i).value = part.split('(')[0] || "";
-                document.getElementById('s_price'+i).value = part.match(/\(RM(.*?)\)/)?.[1] || "";
-            }
-
-            if (isNewEstate) {
-                document.getElementById('f_loc').value = "";
-                document.getElementById('f_google').value = "";
-                document.getElementById('f_area').value = "";
-                document.getElementById('f_ton').value = "";
-            } else {
-                document.getElementById('f_loc').value = currentData.location.split(' (Link:')[0];
-                document.getElementById('f_google').value = currentData.location.match(/\(Link:\s*(.*?)\)/)?.[1] || "";
-                document.getElementById('f_area').value = currentData.area_size;
-                document.getElementById('f_ton').value = notesStr.match(/Est Monthly:\s*([\d.]+)/)?.[1] || "";
-            }
+            // Soil Checks
+            const soil = currentData.soil_type || "";
+            document.getElementById('soil_mineral').checked = soil.includes('Mineral');
+            document.getElementById('soil_peat').checked = soil.includes('Peat');
+            
+            // MJM Checks
+            const mjm = currentData.mjm_centers_supplied || "";
+            document.querySelectorAll('input[name="mjm_center"]').forEach(cb => cb.checked = mjm.includes(cb.value));
         }
 
         function getPayload() {
             const soil = [];
             if(document.getElementById('soil_mineral').checked) soil.push('Mineral');
             if(document.getElementById('soil_peat').checked) soil.push('Peat');
-            const soilType = soil.join('/') || "Not Specified";
-            
-            const mjmCenters = [];
-            document.querySelectorAll('input[name="mjm_center"]:checked').forEach(cb => mjmCenters.push(cb.value));
-
-            const supplyComps = [];
+            const mjm = [];
+            document.querySelectorAll('input[name="mjm_center"]:checked').forEach(cb => mjm.push(cb.value));
+            const comps = [];
             for(let i=1; i<=3; i++) {
-                const n = document.getElementById('s_name'+i).value;
-                const p = document.getElementById('s_price'+i).value;
-                if(n) supplyComps.push(`${n}(RM${p})`);
+                const n = document.getElementById('s_name'+i).value.trim();
+                const p = document.getElementById('s_price'+i).value.trim();
+                if(n) comps.push(`${n} (@RM${p})`);
             }
-
-            const tonnage = document.getElementById('f_ton').value;
-
             return {
-                customer_name: document.getElementById('f_name').value,
-                location: `${document.getElementById('f_loc').value} (Link: ${document.getElementById('f_google').value})`,
-                area_size: document.getElementById('f_area').value,
-                notes: `Contact: ${document.getElementById('f_contact').value}. Soil: ${soilType}. Est Monthly: ${tonnage}mt. MJMSentTo: ${mjmCenters.join(',')}. CurrentSupplies: ${supplyComps.join(',')}.`
+                customer_name: document.getElementById('f_name').value.trim(),
+                contact_no: document.getElementById('f_contact').value.trim(),
+                location: document.getElementById('f_loc').value.trim(),
+                google_link: document.getElementById('f_google').value.trim(),
+                area_size: document.getElementById('f_area').value || 0,
+                tonnage: document.getElementById('f_ton').value || 0,
+                soil_type: soil.join(' & ') || "Not Specified",
+                mjm_centers_supplied: mjm.join(', ') || 'None',
+                current_supply_to: comps.join(', ') || 'None'
             };
         }
 
         async function submitUpdate() {
+            const btn = document.getElementById('save-btn');
+            btn.innerText = "UPDATING..."; btn.disabled = true;
             const { error } = await _supabase.from('ffb_logs').update(getPayload()).eq('id', currentData.id);
             if (!error) { alert("Profile Updated!"); location.reload(); }
+            else { alert(error.message); btn.innerText = "Save Profile"; btn.disabled = false; }
         }
 
         async function submitNewEstate() {
             const user = await checkAuth();
-            const payload = { 
-                ...getPayload(), 
-                log_type: 'New Customer Profile', 
-                branch: userBranch, 
-                pic_email: user.email 
-            };
-            const { error } = await _supabase.from('ffb_logs').insert([payload]);
-            if (!error) { alert("Profile Created Successfully!"); location.reload(); }
+            const btn = document.getElementById('save-btn');
+            btn.innerText = "CREATING..."; btn.disabled = true;
+            const finalPayload = { ...getPayload(), log_type: 'Inactive Customer Profile', branch: userBranch, pic_email: user.email };
+            const { error } = await _supabase.from('ffb_logs').insert([finalPayload]);
+            if (!error) { alert("Profile Created!"); location.reload(); }
+            else { alert(error.message); btn.innerText = "Save Profile"; btn.disabled = false; }
         }
 
         document.getElementById('ffb-form').onsubmit = async (e) => {
             e.preventDefault();
-            
-            // Validation: Ensure customer is selected
-            if (!currentData || !currentData.customer_name || currentData.customer_name === "") {
-                alert("Please select a customer from the list first before saving the survey.");
-                return;
-            }
-
+            if (!currentData?.customer_name) return alert("Select customer first.");
             const user = await checkAuth();
-            const comps = [];
+            const subBtn = e.target.querySelector('button[type="submit"]');
+            subBtn.innerText = "SAVING..."; subBtn.disabled = true;
+
+            const surveyComps = [];
             for(let i=1; i<=3; i++) {
                 const n = document.getElementById('ib'+i).value;
                 const p = document.getElementById('ip'+i).value;
-                if(n) comps.push(`${n}(RM${p})`);
+                if(n) surveyComps.push(`${n} (@RM${p})`);
             }
-            const finalNotes = `Inactive Survey: Reason:${document.getElementById('iq_reason').value} | Advice:${document.getElementById('iq_advice').value} | Competitors:${comps.join(',')}`;
+
             const payload = { 
                 customer_name: currentData.customer_name, 
-                location: currentData.location, 
+                location: currentData.location || "N/A", 
                 log_type: 'Inactive Survey', 
-                notes: finalNotes, 
+                retraction_reason: document.getElementById('iq_reason').value,
+                improvement_suggestions: document.getElementById('iq_advice').value,
+                current_supply_to: surveyComps.join(', '),
                 follow_up_action: document.getElementById('iq_negotiate').checked ? 'Marketing team pricing approach' : 'No', 
                 branch: userBranch, 
                 pic_email: user.email 
             };
+            
             const { error } = await _supabase.from('ffb_logs').insert([payload]);
-            if (!error) { alert("Inactive Record Saved!"); location.reload(); }
+            if (!error) { alert("Inactive Survey Saved!"); location.reload(); }
+            else { alert(error.message); subBtn.innerText = "Submit Survey Form"; subBtn.disabled = false; }
         };
 
-        function hideEditor() { 
-            document.getElementById('editor-container').classList.add('hidden'); 
-            document.getElementById('history-container').classList.add('hidden');
-        }
-        
-        window.onload = async () => { 
-            await checkAuth(); 
-            loadAllCustomers(); 
-        };
+        function closeModal() { document.getElementById('history-modal').style.display = 'none'; }
+        function hideEditor() { document.getElementById('editor-container').classList.add('hidden'); }
+        function createNewDirect() { createNewFromSearch(document.getElementById('search_input').value); }
+        function createNewFromSearch(name) { currentData = { customer_name: name }; document.getElementById('profile-area').classList.remove('hidden'); showMode('add'); }
+        window.onload = async () => { await checkAuth(); loadAllCustomers(); };
     </script>
 </body>
 </html>
