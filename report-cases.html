@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Case Management - MJM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="config.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f0f4f1; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); }
+        .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        #details-modal { transition: opacity 0.3s ease; }
+        .modal-content { transition: transform 0.3s ease-out; }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; padding: 0 !important; }
+            .glass-panel { border: none !important; box-shadow: none !important; background: white !important; }
+            .print-border { border: 1px solid #e2e8f0 !important; border-radius: 0 !important; }
+        }
+    </style>
+</head>
+<body class="p-3 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        
+        <div class="no-print mb-6 px-2">
+            <a href="report.html" class="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-800 transition-all flex items-center gap-2">
+                <span class="text-lg">←</span> Back to report home page
+            </a>
+        </div>
+
+        <div class="no-print flex flex-col md:flex-row justify-between items-center mb-6 glass-panel p-5 md:p-6 rounded-[2.5rem] gap-4">
+            <div>
+                <h1 class="text-xl md:text-2xl font-black text-slate-800 uppercase italic">🚩 Case Management</h1>
+                <p class="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Opened & Resolved Issues</p>
+            </div>
+            
+            <div class="flex items-center gap-2 bg-white p-2 rounded-2xl border shadow-sm">
+                <input type="date" id="filter_start" class="p-1 font-bold text-xs outline-none bg-transparent">
+                <span class="text-slate-300">→</span>
+                <input type="date" id="filter_end" class="p-1 font-bold text-xs outline-none bg-transparent">
+                <button onclick="fetchData()" class="ml-2 bg-slate-800 text-white px-5 py-2 rounded-xl font-bold text-[10px] uppercase hover:bg-black transition-all">Filter</button>
+            </div>
+        </div>
+
+        <div class="mb-8 flex flex-col gap-4">
+            <div class="grid grid-cols-2 w-full glass-panel rounded-[2rem] overflow-hidden border-2 border-slate-800 shadow-lg">
+                <div class="p-6 border-r text-center bg-white">
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Cases Created</p>
+                    <p id="stat-created" class="text-3xl font-black text-slate-800">0</p>
+                </div>
+                <div class="p-6 text-center bg-emerald-50/30">
+                    <p class="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Cases Solved</p>
+                    <p id="stat-closed" class="text-3xl font-black text-emerald-600">0</p>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-3 no-print">
+                <button onclick="exportToExcel()" class="bg-emerald-600 text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-md italic">
+                    📥 Export to Excel
+                </button>
+                <button onclick="window.print()" class="bg-slate-800 text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-md italic">
+                    🖨️ Print PDF
+                </button>
+            </div>
+        </div>
+
+        <div class="glass-panel print-border rounded-[2.5rem] overflow-hidden bg-white shadow-xl border border-slate-200">
+            <div class="table-container">
+                <table class="w-full text-left border-collapse min-w-[600px]">
+                    <thead class="bg-slate-50 text-emerald-700">
+                        <tr>
+                            <th class="p-4 text-[9px] font-black uppercase border-b">Date Opened</th>
+                            <th class="p-4 text-[9px] font-black uppercase border-b">Date Solved</th>
+                            <th class="p-4 text-[9px] font-black uppercase border-b">Customer</th>
+                            <th class="p-4 text-[9px] font-black uppercase border-b">Issue / Resolution Remarks</th>
+                            <th class="p-4 text-center text-[9px] font-black uppercase border-b no-print">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="case-table" class="divide-y divide-slate-100 text-xs font-bold text-slate-700 italic">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="details-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm opacity-0 no-print">
+        <div class="modal-content glass-panel w-full max-w-2xl rounded-[2.5rem] shadow-2xl translate-y-8 overflow-hidden bg-white">
+            <div class="p-6 border-b flex justify-between items-center bg-slate-50">
+                <h3 id="modal-title" class="text-lg font-black text-slate-800 uppercase italic">Case Review</h3>
+                <button onclick="closeModal('details-modal')" class="w-8 h-8 flex items-center justify-center rounded-full bg-white border text-slate-400 hover:text-red-500">✕</button>
+            </div>
+            <div id="modal-body" class="p-8 max-h-[70vh] overflow-y-auto"></div>
+            <div class="p-6 bg-slate-50 border-t text-right">
+                <button onclick="closeModal('details-modal')" class="px-8 py-3 bg-slate-800 text-white rounded-xl font-bold uppercase text-xs">Close View</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentCases = [];
+
+        async function fetchData() {
+            const start = document.getElementById('filter_start').value;
+            const end = document.getElementById('filter_end').value;
+            
+            const { data, error } = await _supabase.from('ffb_logs')
+                .select('*')
+                .or(`created_at.gte.${start}T00:00:00Z,close_case_date.gte.${start}T00:00:00Z`)
+                .or(`created_at.lte.${end}T23:59:59Z,close_case_date.lte.${end}T23:59:59Z`)
+                .order('created_at', { ascending: false });
+
+            if(error) return alert(error.message);
+            
+            currentCases = data.filter(i => i.follow_up_action && i.follow_up_action !== "No");
+            renderTable();
+        }
+
+        function renderTable() {
+            const list = document.getElementById('case-table');
+            let closedCount = 0;
+            
+            list.innerHTML = currentCases.map((x, i) => {
+                const isClosed = x.follow_up_action === 'Closed';
+                if(isClosed) closedCount++;
+
+                const closeRemark = x.notes?.match(/\[CLOSED:\s*([^\]]+)\]/i)?.[1] || "No detailed remark";
+                const issueDetails = x.notes?.split('|')[0] || "Issue details not available";
+
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-4 text-[10px] text-slate-400 font-medium">${new Date(x.created_at).toLocaleDateString('en-GB')}</td>
+                        <td class="p-4 text-[10px] text-emerald-600 font-medium">${x.close_case_date ? new Date(x.close_case_date).toLocaleDateString('en-GB') : '-'}</td>
+                        <td class="p-4 uppercase font-black text-slate-900">${x.customer_name}</td>
+                        <td class="p-4">
+                            <p class="text-slate-800 line-clamp-1">ISSUE: ${issueDetails}</p>
+                            ${isClosed ? `<p class="text-[9px] text-emerald-600 font-black uppercase mt-1 tracking-wider">✓ RESOLVED: ${closeRemark}</p>` : ''}
+                        </td>
+                        <td class="p-4 text-center no-print">
+                            <button onclick="showDetails(${i})" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase italic tracking-tighter hover:bg-black transition-all">View Details</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('stat-created').innerText = currentCases.length;
+            document.getElementById('stat-closed').innerText = closedCount;
+        }
+
+        function showDetails(index) {
+            const x = currentCases[index];
+            const body = document.getElementById('modal-body');
+            
+            body.innerHTML = `
+                <div class="space-y-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-4 bg-slate-50 rounded-2xl border">
+                            <span class="block text-[8px] font-black text-slate-400 uppercase tracking-widest">Current Status</span>
+                            <span class="text-xs font-black uppercase ${x.follow_up_action === 'Closed' ? 'text-emerald-600' : 'text-amber-600'}">${x.follow_up_action}</span>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-2xl border">
+                            <span class="block text-[8px] font-black text-slate-400 uppercase tracking-widest">Branch / PIC</span>
+                            <span class="text-xs font-bold uppercase text-slate-700">${x.branch || '-'} / ${x.pic_email?.split('@')[0] || 'Unknown'}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-[10px] font-black uppercase text-slate-800 mb-2 tracking-widest">Log History & Notes</h4>
+                        <div class="p-5 bg-slate-50 rounded-2xl border italic text-xs leading-relaxed text-slate-600 font-medium">${x.notes || 'No notes recorded'}</div>
+                    </div>
+                </div>
+            `;
+            
+            const m = document.getElementById('details-modal');
+            m.classList.remove('hidden');
+            setTimeout(() => {
+                m.classList.remove('opacity-0');
+                m.querySelector('.modal-content').classList.remove('translate-y-8');
+            }, 10);
+        }
+
+        function closeModal(id) {
+            const m = document.getElementById(id);
+            m.classList.add('opacity-0');
+            m.querySelector('.modal-content').classList.add('translate-y-8');
+            setTimeout(() => m.classList.add('hidden'), 300);
+        }
+
+        function exportToExcel() {
+            if(!currentCases.length) return alert("No data available to export.");
+            const exportData = currentCases.map(x => ({
+                'Opened Date': new Date(x.created_at).toLocaleDateString('en-GB'),
+                'Closed Date': x.close_case_date ? new Date(x.close_case_date).toLocaleDateString('en-GB') : 'PENDING',
+                'Customer': x.customer_name,
+                'Branch': x.branch,
+                'Status': x.follow_up_action,
+                'Notes': x.notes
+            }));
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "CaseReport");
+            XLSX.writeFile(wb, `MJM_Cases_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
+        window.onload = () => {
+            const now = new Date();
+            const first = new Date(now.getFullYear(), now.getMonth(), 1);
+            const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            const toISO = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+            document.getElementById('filter_start').value = toISO(first);
+            document.getElementById('filter_end').value = toISO(last);
+            fetchData();
+        };
+    </script>
+</body>
+</html>
