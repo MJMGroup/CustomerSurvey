@@ -216,12 +216,11 @@
             const resDiv = document.getElementById('search-results');
             if (data?.length > 0) {
                 resDiv.innerHTML = data.map(rec => {
-                    const estTon = rec.notes?.match(/Est Monthly:\s*([\d.]+)/)?.[1] || "0";
                     return `
                     <div class="customer-card p-4 bg-white border rounded-2xl shadow-sm hover:border-slate-400 mb-2 flex justify-between items-center">
                         <div onclick='selectCustomer(${JSON.stringify(rec).replace(/'/g, "&apos;")}, this.parentElement)' class="flex-1 cursor-pointer">
                             <div class="font-black text-slate-800">${rec.customer_name}</div>
-                            <div class="text-[9px] text-slate-400 font-bold uppercase">📍 ${rec.location.split(' (Link:')[0]}</div>
+                            <div class="text-[9px] text-slate-400 font-bold uppercase">📍 ${rec.location || 'No Location'}</div>
                         </div>
                         <button onclick='viewHistory("${rec.customer_name}")' class="ml-4 bg-blue-50 text-blue-600 border border-blue-100 px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-sm hover:bg-blue-100 transition-all">
                             Look In
@@ -240,35 +239,44 @@
             modal.style.display = 'flex';
             nameHeader.innerText = customerName;
             list.innerHTML = '<p class="text-center text-xs font-bold text-slate-400 animate-pulse">FETCHING SURVEYS...</p>';
-            const { data, error } = await _supabase.from('ffb_logs').select('*').eq('customer_name', customerName).ilike('log_type', '%Survey%').order('created_at', { ascending: false });
+            
+            const { data, error } = await _supabase.from('ffb_logs')
+                .select('*')
+                .eq('customer_name', customerName)
+                .ilike('log_type', '%Survey%')
+                .order('created_at', { ascending: false });
+
             if (!data || data.length === 0) {
                 list.innerHTML = '<div class="text-center py-10 text-slate-400 font-bold text-xs">NO SURVEY HISTORY FOUND</div>';
                 return;
             }
             list.innerHTML = data.map(item => {
                 const date = new Date(item.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-                const cleanNotes = item.notes ? item.notes.replace(/\|/g, '<br>') : 'No details';
+                const stars = (num) => '★'.repeat(num || 0) + '☆'.repeat(5 - (num || 0));
                 return `
-                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-xs">
                     <div class="flex justify-between items-start mb-2">
                         <span class="text-[10px] font-black bg-slate-200 px-2 py-0.5 rounded text-slate-600">${date}</span>
                         <span class="text-[9px] font-bold text-rose-500 uppercase">${item.follow_up_action === 'Issue Follow Up Case' ? '⚠️ Follow Up' : ''}</span>
                     </div>
-                    <div class="text-[11px] font-medium text-slate-600 leading-relaxed">${cleanNotes}</div>
+                    <div class="grid grid-cols-1 gap-1 text-slate-600">
+                        <p><b>Speed:</b> <span class="text-amber-500">${stars(item.sat_speed)}</span></p>
+                        <p><b>Loader:</b> <span class="text-amber-500">${stars(item.sat_loader)}</span></p>
+                        <p><b>WB:</b> <span class="text-amber-500">${stars(item.sat_weighbridge)}</span></p>
+                        <p><b>Likes:</b> ${item.customer_likes || '-'}</p>
+                        <p><b>Issues:</b> ${item.issues_raised || '-'}</p>
+                        <p><b>Other Ramps:</b> ${item.current_supply_to || '-'}</p>
+                    </div>
                     <div class="mt-2 text-[9px] text-slate-400 font-bold italic">By: ${item.pic_email}</div>
                 </div>`;
             }).join('');
         }
 
-        function closeModal(e) { document.getElementById('history-modal').style.display = 'none'; }
+        function closeModal() { document.getElementById('history-modal').style.display = 'none'; }
 
         function createNewDirect() {
             const typedName = document.getElementById('search_input').value || "";
-            createNewFromSearch(typedName);
-        }
-
-        function createNewFromSearch(name) {
-            currentData = { customer_name: name, location: "", area_size: "", notes: "" };
+            currentData = { customer_name: typedName };
             document.getElementById('profile-area').classList.remove('hidden');
             showMode('add');
             document.getElementById('editor-container').scrollIntoView({ behavior: 'smooth' });
@@ -282,13 +290,13 @@
             document.getElementById('profile-display').classList.remove('hidden');
             document.getElementById('editor-container').classList.add('hidden');
             document.getElementById('ffb-form').classList.add('hidden');
+            
             document.getElementById('d_name').innerText = data.customer_name;
-            document.getElementById('d_loc').innerText = data.location.split(' (Link:')[0];
+            document.getElementById('d_loc').innerText = data.location || "N/A";
             document.getElementById('d_size').innerText = (data.area_size || 0) + " Ha";
-            document.getElementById('d_ton').innerText = (data.notes?.match(/Est Monthly:\s*([\d.]+)/)?.[1] || 0) + " mt";
+            document.getElementById('d_ton').innerText = (data.tonnage || 0) + " mt";
             
             document.getElementById('profile-look-in-btn').onclick = () => viewHistory(data.customer_name);
-            
             document.getElementById('profile-display').scrollIntoView({ behavior: 'smooth' });
         }
 
@@ -298,168 +306,124 @@
                 document.getElementById('editor-container').classList.add('hidden');
                 return;
             }
-            const container = document.getElementById('editor-container');
-            container.classList.remove('hidden');
+            document.getElementById('editor-container').classList.remove('hidden');
             document.getElementById('ffb-form').classList.add('hidden');
             document.getElementById('profile-display').classList.remove('hidden');
             document.getElementById('editor-title').innerText = mode === 'update' ? 'Update Profile' : 'Create New Profile';
+            
             fillForm(mode === 'add');
             document.getElementById('save-btn').onclick = mode === 'update' ? submitUpdate : submitNewEstate;
         }
 
         function fillForm(isNew = false) {
-            document.getElementById('f_name').value = currentData.customer_name;
-            const notesStr = currentData.notes || "";
-            document.getElementById('f_contact').value = notesStr.match(/Contact:\s*([^.]+)/)?.[1] || "";
-            const soilPart = notesStr.match(/Soil:\s*([^.]+)/)?.[1] || "";
-            document.getElementById('soil_mineral').checked = soilPart.includes('Mineral');
-            document.getElementById('soil_peat').checked = soilPart.includes('Peat');
-            
-            const mjmPart = notesStr.match(/MJMSentTo:\s*([^.]+)/)?.[1] || "";
+            document.getElementById('f_name').value = currentData.customer_name || "";
+            document.getElementById('f_contact').value = isNew ? "" : (currentData.contact_no || "");
+            const soil = currentData.soil_type || "";
+            document.getElementById('soil_mineral').checked = soil.includes('Mineral');
+            document.getElementById('soil_peat').checked = soil.includes('Peat');
+            const mjm = currentData.mjm_centers_supplied || "";
             document.querySelectorAll('input[name="mjm_center"]').forEach(cb => {
-                cb.checked = mjmPart.includes(cb.value);
+                cb.checked = mjm.includes(cb.value);
             });
-
-            const currentSupplies = notesStr.match(/CurrentSupplies:\s*([^.]+)/)?.[1] || "";
-            const supplies = currentSupplies.split(',');
+            const compStr = isNew ? "" : (currentData.current_supply_to || "");
+            const parts = compStr.split(', ');
             for(let i=1; i<=3; i++) {
-                const part = supplies[i-1] || "";
-                document.getElementById('s_name'+i).value = part.split('(')[0] || "";
-                document.getElementById('s_price'+i).value = part.match(/\(RM(.*?)\)/)?.[1] || "";
+                const p = parts[i-1] || "";
+                document.getElementById('s_name'+i).value = p.split(' (@RM')[0] || "";
+                document.getElementById('s_price'+i).value = p.match(/@RM(.*?)\//)?.[1] || "";
             }
-
-            if (isNew) {
-                document.getElementById('f_loc').value = "";
-                document.getElementById('f_google').value = "";
-                document.getElementById('f_area').value = "";
-                document.getElementById('f_ton').value = "";
-            } else {
-                document.getElementById('f_loc').value = currentData.location.split(' (Link:')[0];
-                document.getElementById('f_google').value = currentData.location.match(/\(Link:\s*(.*?)\)/)?.[1] || "";
-                document.getElementById('f_area').value = currentData.area_size;
-                document.getElementById('f_ton').value = notesStr.match(/Est Monthly:\s*([\d.]+)/)?.[1] || "";
-            }
+            document.getElementById('f_loc').value = isNew ? "" : (currentData.location || "");
+            document.getElementById('f_google').value = isNew ? "" : (currentData.google_link || "");
+            document.getElementById('f_area').value = isNew ? "" : (currentData.area_size || "");
+            document.getElementById('f_ton').value = isNew ? "" : (currentData.tonnage || "");
         }
 
         function getPayload() {
             const soil = [];
             if(document.getElementById('soil_mineral').checked) soil.push('Mineral');
             if(document.getElementById('soil_peat').checked) soil.push('Peat');
-            
-            if (soil.length === 0) {
-                alert("Please select at least one Type of Soil.");
-                return null;
-            }
-            const soilType = soil.join('/');
-            
-            let googleLink = document.getElementById('f_google').value.trim();
-            if (googleLink && !googleLink.startsWith('http')) {
-                googleLink = 'https://' + googleLink;
-            }
-
-            const mjmCenters = [];
-            document.querySelectorAll('input[name="mjm_center"]:checked').forEach(cb => mjmCenters.push(cb.value));
-
-            const supplyComps = [];
+            const soilType = soil.join(' & ') || "Not Specified";
+            const mjm = [];
+            document.querySelectorAll('input[name="mjm_center"]:checked').forEach(cb => mjm.push(cb.value));
+            const comps = [];
             for(let i=1; i<=3; i++) {
                 const n = document.getElementById('s_name'+i).value.trim();
                 const p = document.getElementById('s_price'+i).value.trim();
-                if(n) supplyComps.push(`${n}(RM${p})`);
+                if(n) comps.push(`${n} (@RM${p}/mt)`);
             }
-
-            const tonnage = document.getElementById('f_ton').value || "0";
-            const contact = document.getElementById('f_contact').value.trim() || "N/A";
-
             return {
                 customer_name: document.getElementById('f_name').value.trim(),
-                location: `${document.getElementById('f_loc').value.trim()} (Link: ${googleLink})`,
+                contact_no: document.getElementById('f_contact').value.trim(),
+                location: document.getElementById('f_loc').value.trim(),
+                google_link: document.getElementById('f_google').value.trim(),
                 area_size: document.getElementById('f_area').value || 0,
-                notes: `Contact: ${contact}. Soil: ${soilType}. Est Monthly: ${tonnage}mt. MJMSentTo: ${mjmCenters.join(',') || 'None'}. CurrentSupplies: ${supplyComps.join(',') || 'None'}.`
+                tonnage: document.getElementById('f_ton').value || 0,
+                soil_type: soilType,
+                mjm_centers_supplied: mjm.join(', ') || 'None',
+                current_supply_to: comps.join(', ') || 'None',
+                notes: `Profile managed via Active Customer dashboard.`
             };
         }
 
         async function submitUpdate() {
             const payload = getPayload();
-            if (!payload) return;
-
             const btn = document.getElementById('save-btn');
-            const originalText = btn.innerText;
             btn.innerText = "UPDATING...";
             btn.disabled = true;
-
             const { error } = await _supabase.from('ffb_logs').update(payload).eq('id', currentData.id);
-            
             if (error) {
-                alert("Error updating profile: " + error.message);
-                btn.innerText = originalText;
+                alert("Error: " + error.message);
+                btn.innerText = "Save Profile";
                 btn.disabled = false;
             } else {
-                alert("Profile Updated Successfully!");
+                alert("Profile Updated!");
                 location.reload();
             }
         }
 
         async function submitNewEstate() {
             const payload = getPayload();
-            if (!payload) return;
-
             const user = await checkAuth();
             const btn = document.getElementById('save-btn');
-            const originalText = btn.innerText;
             btn.innerText = "CREATING...";
             btn.disabled = true;
-
-            const finalPayload = { 
-                ...payload, 
-                log_type: 'New Customer Profile', 
-                branch: userBranch, 
-                pic_email: user.email 
-            };
-
+            const finalPayload = { ...payload, log_type: 'Existing Customer Profile', branch: userBranch, pic_email: user.email };
             const { error } = await _supabase.from('ffb_logs').insert([finalPayload]);
-            
             if (error) {
-                alert("Error creating profile: " + error.message);
-                btn.innerText = originalText;
+                alert("Error: " + error.message);
+                btn.innerText = "Save Profile";
                 btn.disabled = false;
             } else {
-                alert("New Profile Created Successfully!");
+                alert("New Profile Created!");
                 location.reload();
             }
         }
 
         document.getElementById('ffb-form').onsubmit = async (e) => {
             e.preventDefault();
-
-            // FIXED: Validation to prevent saving without a selected customer
-            if (!currentData || !currentData.id) {
-                alert("Please select a customer from the search list first.");
-                return;
-            }
-
+            if (!currentData?.id) return alert("Select a customer first.");
             const user = await checkAuth();
-            const comps = [];
+            
+            const surveyComps = [];
             for(let i=1; i<=2; i++) {
                 const n = document.getElementById('fb'+i).value;
-                const p = document.getElementById('fp'+i)?.value;
-                if(n) comps.push(`${n}(RM${p})`);
+                const p = document.getElementById('fp'+i).value;
+                if(n) surveyComps.push(`${n} (@RM${p})`);
             }
-            const surveyNotes = [
-                `Speed:${document.getElementById('q_speed').value}`,
-                `Loader:${document.getElementById('q_loader').value}`,
-                `WB:${document.getElementById('q_wb').value}`,
-                `OtherRamps:${comps.join(',')}`,
-                `WAChannel:${document.getElementById('whatsapp_follow').checked ? 'Yes' : 'No'}`,
-                `Likes:${document.getElementById('customer_likes').value}`,
-                `Issues:${document.getElementById('customer_issues').value}`
-            ].join(' | ');
-            const followUpStatus = document.getElementById('follow_up').checked ? 'Issue Follow Up Case' : 'No';
+
+            // UPDATED PAYLOAD TO MATCH SUPABASE COLUMN NAMES
             const payload = { 
                 customer_name: currentData.customer_name, 
                 location: currentData.location, 
                 log_type: 'Active Survey',
-                notes: surveyNotes,
-                follow_up_action: followUpStatus,
+                sat_speed: parseInt(document.getElementById('q_speed').value),
+                sat_loader: parseInt(document.getElementById('q_loader').value),
+                sat_weighbridge: parseInt(document.getElementById('q_wb').value),
+                current_supply_to: surveyComps.join(', '),
+                whatsapp_followed: document.getElementById('whatsapp_follow').checked,
+                customer_likes: document.getElementById('customer_likes').value,
+                issues_raised: document.getElementById('customer_issues').value,
+                follow_up_action: document.getElementById('follow_up').checked ? 'Issue Follow Up Case' : 'No',
                 branch: userBranch, 
                 pic_email: user.email 
             };
@@ -473,7 +437,7 @@
                 alert("Survey Saved!"); 
                 location.reload(); 
             } else {
-                alert("Error saving survey: " + error.message);
+                alert("Error: " + error.message);
                 submitBtn.innerText = "Submit Survey Form";
                 submitBtn.disabled = false;
             }
