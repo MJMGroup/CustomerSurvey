@@ -51,7 +51,7 @@
                     </div>
 
                     <div class="p-4 bg-blue-50 border border-blue-100 rounded-xl">
-                        <label class="block text-sm font-bold text-blue-900 mb-2">Currently supply to our collection center?</label>
+                        <label class="block text-sm font-bold text-blue-900 mb-2">Currently supply to our collection center? (Check all that apply)</label>
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
                             <label class="soil-box"><input type="checkbox" name="mjm_center" value="MJM Bekenu" class="w-4 h-4 accent-blue-600"> MJM Bekenu</label>
                             <label class="soil-box"><input type="checkbox" name="mjm_center" value="MJM Kejapil" class="w-4 h-4 accent-blue-600"> MJM Kejapil</label>
@@ -85,7 +85,7 @@
                     </div>
 
                     <div class="space-y-3 mt-6">
-                        <label class="block text-sm font-bold text-slate-700">Currently supply to other ramp?</label>
+                        <label class="block text-sm font-bold text-slate-700">Currently supply to other ramp? (Competitors)</label>
                         
                         <div class="grid grid-cols-2 gap-2">
                             <input type="text" id="b1" placeholder="Name of mill / collection center" class="p-3 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500">
@@ -115,8 +115,16 @@
         document.getElementById('ffb-form').onsubmit = async (e) => {
             e.preventDefault();
             
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            btn.innerText = "Saving Data...";
+
             const user = await checkAuth();
-            if (!user) return;
+            if (!user) {
+                btn.disabled = false;
+                btn.innerText = "Save New Customer";
+                return;
+            }
 
             const custName = document.getElementById('cust_name').value;
             const contact = document.getElementById('contact_ui').value;
@@ -129,39 +137,50 @@
             const soilPeat = document.getElementById('soil_peat').checked ? "Peat" : "";
             const soilType = [soilMineral, soilPeat].filter(Boolean).join(" & ") || "Not Specified";
 
-            // Collect MJM Centers
+            // Capture MJM Centers Ticks
             const mjmCenters = [];
             document.querySelectorAll('input[name="mjm_center"]:checked').forEach(cb => mjmCenters.push(cb.value));
+            const mjmString = mjmCenters.join(', ') || 'None';
 
-            // Collect competitor data
+            // Capture Competitor Data from the text rows
             const competitors = [];
             for(let i=1; i<=3; i++) {
-                const name = document.getElementById('b'+i).value;
-                const price = document.getElementById('p'+i).value;
-                if(name) competitors.push(`${name} (@RM${price}/mt)`);
+                const name = document.getElementById('b'+i).value.trim();
+                const price = document.getElementById('p'+i).value.trim();
+                if(name) {
+                    competitors.push(`${name} (@RM${price}/mt)`);
+                }
             }
+            const competitorString = competitors.join(', ') || 'None';
 
-            const finalLocation = `${locationTxt} (Link: ${googleLink})`;
-            // Updated notes to include MJMSentTo
-            const finalNotes = `New Customer Entry. Contact: ${contact}. Soil: ${soilType}. Est Monthly: ${tonnage}mt. MJMSentTo: ${mjmCenters.join(',')}. Competitors: ${competitors.join(', ') || 'None'}`;
-
+            // DEDICATED PAYLOAD - Names must match your Supabase columns exactly
             const payload = { 
                 customer_name: custName, 
-                location: finalLocation, 
-                area_size: area,
-                tonnage: tonnage, 
+                contact_no: contact,        // Matches your screenshot: contact_no
+                location: locationTxt,      
+                google_link: googleLink,    
+                area_size: area,            
+                tonnage: tonnage,           
+                soil_type: soilType,        
+                mjm_centers_supplied: mjmString,     
+                current_supply_to: competitorString, // Matches your screenshot: current_supply_to
                 log_type: 'New Customer', 
-                notes: finalNotes, 
                 branch: userBranch, 
-                pic_email: user.email 
+                pic_email: user.email,
+                notes: `Entry. Contact: ${contact}. Soil: ${soilType}. Est: ${tonnage}mt.`
             };
+
+            console.log("Saving payload:", payload); // For debugging in browser console
 
             const { error } = await _supabase.from('ffb_logs').insert([payload]);
 
             if (error) {
-                alert("Error: " + error.message);
+                console.error("Supabase Error:", error);
+                alert("Database Error: " + error.message);
+                btn.disabled = false;
+                btn.innerText = "Save New Customer";
             } else {
-                alert("New Customer Registered Successfully!");
+                alert("SUCCESS: New Customer Profile Created!");
                 window.location.href = 'index.html';
             }
         };
