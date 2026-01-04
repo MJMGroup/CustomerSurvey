@@ -16,6 +16,12 @@
         
         #history-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
         .modal-content { background: white; width: 100%; max-width: 600px; max-height: 80vh; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column; }
+        
+        /* Smooth scrolling for the whole page */
+        html { scroll-behavior: smooth; }
+        /* Custom scrollbar for search results */
+        #search-results::-webkit-scrollbar { width: 4px; }
+        #search-results::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-900 p-4 md:p-8">
@@ -48,7 +54,7 @@
 
             <div id="search-section" class="space-y-6 pt-6 border-t border-slate-100">
                 <div class="flex gap-2">
-                    <input type="text" id="search_input" placeholder="Search Name, Location, or Contact..." class="flex-1 p-4 border-2 border-slate-100 rounded-2xl outline-none focus:border-slate-500">
+                    <input type="text" id="search_input" oninput="performSearch()" placeholder="Search Name, Location, or Contact..." class="flex-1 p-4 border-2 border-slate-100 rounded-2xl outline-none focus:border-slate-500">
                     <button type="button" onclick="performSearch()" class="bg-slate-700 text-white px-6 py-2 rounded-2xl font-black">Search</button>
                 </div>
                 <div>
@@ -148,6 +154,7 @@
 
     <script>
         let currentData = null;
+        let debounceTimer;
 
         async function loadAllCustomers() {
             const { data } = await _supabase.from('ffb_logs').select('*').not('log_type', 'ilike', '%Survey%').order('customer_name', { ascending: true });
@@ -155,16 +162,19 @@
         }
 
         async function performSearch() {
-            const val = document.getElementById('search_input').value;
-            if (val.length < 1) { loadAllCustomers(); return; }
-            const { data } = await _supabase.from('ffb_logs').select('*').not('log_type', 'ilike', '%Survey%').or(`customer_name.ilike.%${val}%,location.ilike.%${val}%`).order('customer_name', { ascending: true });
-            renderList(data, val);
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(async () => {
+                const val = document.getElementById('search_input').value;
+                if (val.length < 1) { loadAllCustomers(); return; }
+                const { data } = await _supabase.from('ffb_logs').select('*').not('log_type', 'ilike', '%Survey%').or(`customer_name.ilike.%${val}%,location.ilike.%${val}%`).order('customer_name', { ascending: true });
+                renderList(data, val);
+            }, 300);
         }
 
         function renderList(data, searchVal = "") {
             const resDiv = document.getElementById('search-results');
             resDiv.innerHTML = data?.length > 0 ? data.map(rec => `
-                <div class="customer-card p-4 bg-white border rounded-2xl shadow-sm hover:border-slate-400 mb-2 flex justify-between items-center">
+                <div class="customer-card p-4 bg-white border rounded-2xl shadow-sm hover:border-slate-400 mb-2 flex justify-between items-center transition-all">
                     <div onclick='selectCustomer(${JSON.stringify(rec).replace(/'/g, "&apos;")}, this.parentElement)' class="flex-1 cursor-pointer">
                         <div class="font-black text-slate-800 uppercase">${rec.customer_name}</div>
                         <div class="text-[10px] text-slate-500 font-semibold mt-1 uppercase">📍 ${rec.location || 'No Location'}</div>
@@ -186,6 +196,8 @@
             document.getElementById('d_size').innerText = (data.area_size || 0) + " Ha";
             document.getElementById('d_ton').innerText = (data.tonnage || 0) + " mt";
             document.getElementById('profile-look-in').onclick = () => viewHistoryModal(data.customer_name);
+            
+            document.getElementById('profile-display').scrollIntoView({ behavior: 'smooth' });
         }
 
         async function viewHistoryModal(customerName) {
@@ -217,6 +229,7 @@
             if(mode === 'survey') {
                 document.getElementById('ffb-form').classList.remove('hidden');
                 document.getElementById('editor-container').classList.add('hidden');
+                document.getElementById('ffb-form').scrollIntoView({ behavior: 'smooth' });
                 return;
             }
             document.getElementById('editor-container').classList.remove('hidden');
@@ -224,6 +237,9 @@
             document.getElementById('editor-title').innerText = mode === 'update' ? 'Update Profile' : 'Create New Profile';
             fillForm(mode === 'add');
             document.getElementById('save-btn').onclick = mode === 'update' ? submitUpdate : submitNewEstate;
+            
+            // IMPROVEMENT: Slide down to form
+            document.getElementById('editor-container').scrollIntoView({ behavior: 'smooth' });
         }
 
         function fillForm(isNew = false) {
@@ -321,7 +337,14 @@
         function closeModal() { document.getElementById('history-modal').style.display = 'none'; }
         function hideEditor() { document.getElementById('editor-container').classList.add('hidden'); }
         function createNewDirect() { createNewFromSearch(document.getElementById('search_input').value); }
-        function createNewFromSearch(name) { currentData = { customer_name: name }; document.getElementById('profile-area').classList.remove('hidden'); showMode('add'); }
+        
+        // IMPROVEMENT: Auto-scroll when creating new profile
+        function createNewFromSearch(name) { 
+            currentData = { customer_name: name }; 
+            document.getElementById('profile-area').classList.remove('hidden'); 
+            showMode('add'); 
+        }
+
         window.onload = async () => { await checkAuth(); loadAllCustomers(); };
     </script>
 </body>
