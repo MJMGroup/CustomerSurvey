@@ -77,7 +77,7 @@
                             <th class="p-4 text-[9px] font-black uppercase border-b">Date Opened</th>
                             <th class="p-4 text-[9px] font-black uppercase border-b">Date Solved</th>
                             <th class="p-4 text-[9px] font-black uppercase border-b">Customer</th>
-                            <th class="p-4 text-[9px] font-black uppercase border-b">Issue / Resolution Remarks</th>
+                            <th class="p-4 text-[9px] font-black uppercase border-b">Current Status</th>
                             <th class="p-4 text-center text-[9px] font-black uppercase border-b no-print">Action</th>
                         </tr>
                     </thead>
@@ -88,15 +88,21 @@
         </div>
     </div>
 
-    <div id="details-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm opacity-0 no-print">
-        <div class="modal-content glass-panel w-full max-w-2xl rounded-[2.5rem] shadow-2xl translate-y-8 overflow-hidden bg-white">
+    <div id="details-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md opacity-0 no-print">
+        <div class="modal-content w-full max-w-2xl rounded-[2.5rem] shadow-2xl translate-y-8 overflow-hidden bg-white">
             <div class="p-6 border-b flex justify-between items-center bg-slate-50">
-                <h3 id="modal-title" class="text-lg font-black text-slate-800 uppercase italic">Case Review</h3>
-                <button onclick="closeModal('details-modal')" class="w-8 h-8 flex items-center justify-center rounded-full bg-white border text-slate-400 hover:text-red-500">✕</button>
+                <div>
+                    <span id="modal-badge" class="px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest bg-slate-200 text-slate-600 mb-1 inline-block">Case File</span>
+                    <h3 id="modal-title" class="text-xl font-black text-slate-800 uppercase italic tracking-tighter"></h3>
+                </div>
+                <button onclick="closeModal('details-modal')" class="w-10 h-10 flex items-center justify-center rounded-2xl bg-white border shadow-sm text-slate-400 hover:text-red-500">✕</button>
             </div>
-            <div id="modal-body" class="p-8 max-h-[70vh] overflow-y-auto"></div>
-            <div class="p-6 bg-slate-50 border-t text-right">
-                <button onclick="closeModal('details-modal')" class="px-8 py-3 bg-slate-800 text-white rounded-xl font-bold uppercase text-xs">Close View</button>
+            
+            <div id="modal-body" class="p-8 max-h-[70vh] overflow-y-auto space-y-8">
+                </div>
+
+            <div class="p-6 bg-slate-50 border-t flex justify-end">
+                <button onclick="closeModal('details-modal')" class="px-10 py-4 bg-slate-800 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-black transition-all shadow-lg">Close Case Viewer</button>
             </div>
         </div>
     </div>
@@ -110,12 +116,13 @@
             
             const { data, error } = await _supabase.from('ffb_logs')
                 .select('*')
-                .or(`created_at.gte.${start}T00:00:00Z,close_case_date.gte.${start}T00:00:00Z`)
-                .or(`created_at.lte.${end}T23:59:59Z,close_case_date.lte.${end}T23:59:59Z`)
+                .or(`created_at.gte.${start}T00:00:00,close_case_date.gte.${start}T00:00:00`)
+                .or(`created_at.lte.${end}T23:59:59,close_case_date.lte.${end}T23:59:59`)
                 .order('created_at', { ascending: false });
 
             if(error) return alert(error.message);
             
+            // Filter to only show records where a follow up was requested (Cases)
             currentCases = data.filter(i => i.follow_up_action && i.follow_up_action !== "No");
             renderTable();
         }
@@ -128,17 +135,15 @@
                 const isClosed = x.follow_up_action === 'Closed';
                 if(isClosed) closedCount++;
 
-                const closeRemark = x.notes?.match(/\[CLOSED:\s*([^\]]+)\]/i)?.[1] || "No detailed remark";
-                const issueDetails = x.notes?.split('|')[0] || "Issue details not available";
-
                 return `
                     <tr class="hover:bg-slate-50">
                         <td class="p-4 text-[10px] text-slate-400 font-medium">${new Date(x.created_at).toLocaleDateString('en-GB')}</td>
-                        <td class="p-4 text-[10px] text-emerald-600 font-medium">${x.close_case_date ? new Date(x.close_case_date).toLocaleDateString('en-GB') : '-'}</td>
+                        <td class="p-4 text-[10px] text-emerald-600 font-black">${x.close_case_date ? new Date(x.close_case_date).toLocaleDateString('en-GB') : '-'}</td>
                         <td class="p-4 uppercase font-black text-slate-900">${x.customer_name}</td>
                         <td class="p-4">
-                            <p class="text-slate-800 line-clamp-1">ISSUE: ${issueDetails}</p>
-                            ${isClosed ? `<p class="text-[9px] text-emerald-600 font-black uppercase mt-1 tracking-wider">✓ RESOLVED: ${closeRemark}</p>` : ''}
+                            <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${isClosed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
+                                ${x.follow_up_action}
+                            </span>
                         </td>
                         <td class="p-4 text-center no-print">
                             <button onclick="showDetails(${i})" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-[9px] font-black uppercase italic tracking-tighter hover:bg-black transition-all">View Details</button>
@@ -153,26 +158,91 @@
 
         function showDetails(index) {
             const x = currentCases[index];
+            document.getElementById('modal-title').innerText = x.customer_name;
             const body = document.getElementById('modal-body');
             
-            body.innerHTML = `
-                <div class="space-y-6">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="p-4 bg-slate-50 rounded-2xl border">
-                            <span class="block text-[8px] font-black text-slate-400 uppercase tracking-widest">Current Status</span>
-                            <span class="text-xs font-black uppercase ${x.follow_up_action === 'Closed' ? 'text-emerald-600' : 'text-amber-600'}">${x.follow_up_action}</span>
-                        </div>
-                        <div class="p-4 bg-slate-50 rounded-2xl border">
-                            <span class="block text-[8px] font-black text-slate-400 uppercase tracking-widest">Branch / PIC</span>
-                            <span class="text-xs font-bold uppercase text-slate-700">${x.branch || '-'} / ${x.pic_email?.split('@')[0] || 'Unknown'}</span>
-                        </div>
+            const isClosed = x.follow_up_action === 'Closed';
+            const closeRemark = x.notes?.match(/\[CLOSED:\s*([^\]]+)\]/i)?.[1] || "No resolution remark recorded.";
+            const originalIssues = x.notes?.split('|')[0] || "No details provided.";
+
+            // 1. Customer Profile Section
+            const sectionProfile = `
+                <div>
+                    <h4 class="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest flex items-center gap-2">
+                        <span class="w-5 h-5 rounded bg-slate-800 text-white flex items-center justify-center text-[9px]">1</span> 
+                        Customer Identity
+                    </h4>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="p-3 bg-slate-50 border rounded-xl"><p class="text-[8px] font-black text-slate-400 uppercase">Contact</p><p class="text-xs font-bold">${x.contact_no || 'N/A'}</p></div>
+                        <div class="p-3 bg-slate-50 border rounded-xl"><p class="text-[8px] font-black text-slate-400 uppercase">Location</p><p class="text-xs font-bold uppercase">${x.location || 'N/A'}</p></div>
+                        <div class="p-3 bg-slate-50 border rounded-xl"><p class="text-[8px] font-black text-slate-400 uppercase">Area Size</p><p class="text-xs font-bold">${x.area_size || '0'} Ha</p></div>
+                        <div class="p-3 bg-slate-50 border rounded-xl"><p class="text-[8px] font-black text-slate-400 uppercase">Soil Type</p><p class="text-xs font-bold uppercase">${x.soil_type || 'N/A'}</p></div>
                     </div>
-                    <div>
-                        <h4 class="text-[10px] font-black uppercase text-slate-800 mb-2 tracking-widest">Log History & Notes</h4>
-                        <div class="p-5 bg-slate-50 rounded-2xl border italic text-xs leading-relaxed text-slate-600 font-medium">${x.notes || 'No notes recorded'}</div>
+                </div>`;
+
+            // 2. Survey Q&A Logic
+            let qSet = [];
+            const type = (x.log_type || "").toLowerCase();
+            if (type.includes('new')) {
+                qSet = [
+                    { q: "Monthly Tonnage", a: (x.tonnage || "0") + " mt" },
+                    { q: "MJM Centers", a: x.mjm_centers_supplied || "None" },
+                    { q: "Current Competitors", a: x.current_supply_to || "None" }
+                ];
+            } else if (type.includes('inactive')) {
+                qSet = [
+                    { q: "Retraction Reason", a: x.retraction_reason || "N/A" },
+                    { q: "Advice/Suggestions", a: x.improvement_suggestions || "N/A" },
+                    { q: "Other Ramp Prices", a: x.current_supply_to || "None" }
+                ];
+            } else {
+                qSet = [
+                    { q: "Unloading Speed", a: x.sat_speed ? x.sat_speed + " / 5" : "N/A" },
+                    { q: "Loader Efficiency", a: x.sat_loader ? x.sat_loader + " / 5" : "N/A" },
+                    { q: "Customer Likes", a: x.customer_likes || "N/A" },
+                    { q: "WhatsApp Followed", a: x.whatsapp_followed ? "YES" : "NO" }
+                ];
+            }
+
+            const sectionSurvey = `
+                <div>
+                    <h4 class="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest flex items-center gap-2">
+                        <span class="w-5 h-5 rounded bg-blue-600 text-white flex items-center justify-center text-[9px]">2</span> 
+                        Survey Submission (${x.log_type})
+                    </h4>
+                    <div class="p-5 bg-blue-50/50 rounded-2xl border border-blue-100 space-y-4">
+                        ${qSet.map(s => `<div><p class="text-[8px] font-black text-blue-400 uppercase">${s.q}</p><p class="text-xs font-bold text-slate-700">${s.a}</p></div>`).join('')}
                     </div>
-                </div>
-            `;
+                </div>`;
+
+            // 3. Case Section
+            const sectionCase = `
+                <div class="pt-4 border-t-2 border-dashed border-slate-100">
+                    <h4 class="text-[10px] font-black uppercase text-slate-400 mb-3 tracking-widest flex items-center gap-2">
+                        <span class="w-5 h-5 rounded bg-red-500 text-white flex items-center justify-center text-[9px]">3</span> 
+                        Case Resolution Details
+                    </h4>
+                    <div class="space-y-4">
+                        <div class="p-5 bg-slate-900 text-white rounded-2xl">
+                            <p class="text-[8px] font-black text-slate-400 uppercase mb-1">Issue Reported by PIC</p>
+                            <p class="text-xs italic font-medium">"${x.issues_raised || originalIssues}"</p>
+                        </div>
+                        ${isClosed ? `
+                        <div class="p-5 bg-emerald-50 border border-emerald-200 rounded-2xl">
+                            <div class="flex justify-between items-center mb-2">
+                                <p class="text-[8px] font-black text-emerald-600 uppercase">Resolution Remark</p>
+                                <p class="text-[8px] font-bold text-emerald-400 uppercase">Solved on: ${new Date(x.close_case_date).toLocaleDateString('en-GB')}</p>
+                            </div>
+                            <p class="text-xs font-bold text-emerald-800 uppercase tracking-tight">${closeRemark}</p>
+                        </div>` : `
+                        <div class="p-5 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3">
+                            <div class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
+                            <p class="text-xs font-black text-amber-700 uppercase">Action Pending: This case is still open.</p>
+                        </div>`}
+                    </div>
+                </div>`;
+
+            body.innerHTML = sectionProfile + sectionSurvey + sectionCase;
             
             const m = document.getElementById('details-modal');
             m.classList.remove('hidden');
@@ -197,7 +267,7 @@
                 'Customer': x.customer_name,
                 'Branch': x.branch,
                 'Status': x.follow_up_action,
-                'Notes': x.notes
+                'Issue': x.issues_raised || x.notes?.split('|')[0]
             }));
             const ws = XLSX.utils.json_to_sheet(exportData);
             const wb = XLSX.utils.book_new();
